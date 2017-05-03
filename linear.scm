@@ -14,6 +14,9 @@
 
 (define atom? symbol?)
 
+(define (nil? a)
+  (eq? a 'nil))
+
 ;; State: (C R1 R2 SP FR)
 
 (define c 0)
@@ -38,7 +41,7 @@
 
 (define (op-null? r)
   (lambda (state)
-    (if (equal? (reg state r) 'nil)
+    (if (nil? (reg state r))
         (reg-set state c 'true)
         (reg-set state c 'nil))))
 
@@ -112,7 +115,16 @@
   (op-cons r1 r2))
 
 (define (op-pop r1 r2)
-  ???)
+  (lambda (state)
+    (let ((a (reg state r1))
+          (b (reg state r2)))
+      (if (and (nil? a)
+               (not (atom? b)))
+          (--> state
+               ((op-swap-cdr fr r2))
+               ((op-swap r2 fr))
+               ((op-swap-car r1 fr)))
+          (reg-set state c 'op-pop-error)))))
 
 ;; Run:
 
@@ -138,4 +150,6 @@
         (op-swap-car c fr)
         (op-null? c)
         (op-swap-cdr sp fr)
-        (op-cons r1 r2))))
+        (op-cons r1 r2)
+        (op-set r1 'nil)
+        (op-pop r1 r2))))
