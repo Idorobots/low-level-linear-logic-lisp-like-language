@@ -60,6 +60,16 @@
       (cons (car state)
             (reg-set (cdr state) (- r 1) value))))
 
+;; Run:
+
+(define (run tag state . opcodes)
+  (trace (string-append (symbol->string tag) "-result")
+         (foldl (lambda (o s)
+                  (trace tag s)
+                  (o s))
+                state
+                opcodes)))
+
 ;; Opcodes (op dest src ...):
 
 ;; c := (null? r)
@@ -149,14 +159,16 @@
                (reg-set r2 (cons (car b) a)))
           (reg-set state c 'op-swap-cdr-error)))))
 
+;; Somewhat functions:
+
 ;; r1 := (cons r2 r1), r2 := nil
 (define (op-push r1 r2)
   (lambda (state)
     (if (not (equal? r1 r2))
-        (--> state
-             ((op-swap-cdr r1 fr))
-             ((op-swap-car r2 fr))
-             ((op-swap r1 fr)))
+        (run 'op-push state
+             (op-swap-cdr r1 fr)
+             (op-swap-car r2 fr)
+             (op-swap r1 fr))
         (reg-set state c 'op-cons-error))))
 
 ;; r1 := (car r2), r2 := (cdr r2)
@@ -166,33 +178,32 @@
           (b (reg state r2)))
       (if (and (nil? a)
                (not (atom? b)))
-          (--> state
-               ((op-swap-cdr fr r2))
-               ((op-swap r2 fr))
-               ((op-swap-car r1 fr)))
+          (run 'op-pop state
+               (op-swap-cdr fr r2)
+               (op-swap r2 fr)
+               (op-swap-car r1 fr))
           (reg-set state c 'op-pop-error)))))
 
 ;; Functions (fn args ... result):
 
-(define (fn-free r1) ;; NOTE Argument has to be passed as the r1.
+(define (fn-free r1)
   (lambda (state)
     (trace 'fn-free state)
     (let ((a (reg state r1)))
       (if (not (nil? a))
           (if (atom? a)
-              (trace 'fn-free-result-atom
-                     ((op-set r1 'nil) state))
-              (trace 'fn-free-result-non-atom
-                     (--> state
-                          ;; Save state.
-                          ((op-push sp t1))
-                          ;; Compute (cdr r1).
-                          ((op-pop t1 r1))
-                          ((fn-free r1)) ;; Free (cdr r1).
-                          ((op-swap t1 r1))
-                          ((fn-free r1)) ;; Free (car r1).
-                          ;; Restore state.
-                          ((op-pop t1 sp)))))
+              (run 'fn-free-atom state
+                   (op-set r1 'nil))
+              (run 'fn-free-non-atom state
+                   ;; Save state.
+                   (op-push sp t1)
+                   ;; Compute (cdr r1).
+                   (op-pop t1 r1)
+                   (fn-free r1) ;; Free (cdr r1).
+                   (op-swap t1 r1)
+                   (fn-free r1) ;; Free (car r1).
+                   ;; Restore state.
+                   (op-pop t1 sp)))
           (trace 'fn-free-result-nil state)))))
 
 (define (fn-copy r1 r2)
@@ -203,27 +214,26 @@
       (if (nil? b)
           (if (not (nil? a))
               (if (atom? a)
-                  (trace 'fn-copy-result-atom
-                         ((op-assign r2 r1) state))
-                  (trace 'fn-copy-result-non-atom
-                         (--> state
-                              ;; Save state.
-                              ((op-push sp t1))
-                              ((op-push sp t2))
-                              ;; Compute the (cdr r1)
-                              ((op-pop t1 r1))
-                              ((fn-copy r1 r2)) ;; Copy (cdr r1).
-                              ((op-swap t1 r1))
-                              ((op-swap t2 r2)) ;; Result is stored in r2.
-                              ((fn-copy r1 r2)) ;; Copy (car r1).
-                              ((op-swap t1 r1))
-                              ((op-swap t2 r2))
-                              ;; Restore the argument.
-                              ((op-push r1 t1))
-                              ((op-push r2 t2))
-                              ;; Restore state.
-                              ((op-pop t2 sp))
-                              ((op-pop t1 sp)))))
+                  (run 'fn-copy-atom state
+                       (op-assign r2 r1))
+                  (run 'fn-copy-non-atom state
+                       ;; Save state.
+                       (op-push sp t1)
+                       (op-push sp t2)
+                       ;; Compute the (cdr r1)
+                       (op-pop t1 r1)
+                       (fn-copy r1 r2) ;; Copy (cdr r1).
+                       (op-swap t1 r1)
+                       (op-swap t2 r2) ;; Result is stored in r2.
+                       (fn-copy r1 r2) ;; Copy (car r1).
+                       (op-swap t1 r1)
+                       (op-swap t2 r2)
+                       ;; Restore the argument.
+                       (op-push r1 t1)
+                       (op-push r2 t2)
+                       ;; Restore state.
+                       (op-pop t2 sp)
+                       (op-pop t1 sp)))
               (trace 'fn-copy-result-nil state))
           (reg-set state c 'fn-copy-error)))))
 
@@ -236,40 +246,38 @@
                    (not (atom? b)))
               (and (atom? b)
                    (not (atom? a))))
-          (trace 'fn-equal?-result-mismatched
-                 ((op-set r3 'nil) state))
+          (run 'fn-equal?-mismatched state
+               (op-set r3 'nil))
           (if (and (atom? a)
                    (atom? b))
-              (trace 'fn-equal?-result-eq
-                     (--> state
-                          ((op-eq? r1 r2))
-                          ((op-swap c r3))))
-              (trace 'fn-equal?-result-non-eq
-                     (--> state
-                          ;; Save state.
-                          ((op-push sp t1))
-                          ((op-push sp t2))
-                          ((op-push sp t3))
-                          ;; Compute (car r1) & (car r2).
-                          ((op-pop t1 r1))
-                          ((op-pop t2 r2))
-                          ((fn-equal? r1 r2 r3))
-                          ((op-swap t1 r1))
-                          ((op-swap t2 r2))
-                          ((op-swap t3 r3)) ;; Result of (equal? (cdr r1) (cdr r2)) is in t3.
-                          ((fn-equal? r1 r2 r3)) ;; Result of (equal? (car r1) (car r2)) is in r3.
-                          ((op-swap t1 r1))
-                          ((op-swap t2 r2))
-                          ((op-and t3 r3))
-                          ((op-swap c r3)) ;; Result of (and t3 r3) lands in r3.
-                          ;; Restore arguments.
-                          ((op-push r1 t1))
-                          ((op-push r2 t2))
-                          ((op-set t3 'nil))
-                          ;; Restore state.
-                          ((op-pop t3 sp))
-                          ((op-pop t2 sp))
-                          ((op-pop t1 sp)))))))))
+              (run 'fn-equal?-eq state
+                   (op-eq? r1 r2)
+                   (op-swap c r3))
+              (run 'fn-equal?-non-eq state
+                   ;; Save state.
+                   (op-push sp t1)
+                   (op-push sp t2)
+                   (op-push sp t3)
+                   ;; Compute (car r1) & (car r2).
+                   (op-pop t1 r1)
+                   (op-pop t2 r2)
+                   (fn-equal? r1 r2 r3)
+                   (op-swap t1 r1)
+                   (op-swap t2 r2)
+                   (op-swap t3 r3) ;; Result of (equal? (cdr r1) (cdr r2)) is in t3.
+                   (fn-equal? r1 r2 r3) ;; Result of (equal? (car r1) (car r2)) is in r3.
+                   (op-swap t1 r1)
+                   (op-swap t2 r2)
+                   (op-and t3 r3)
+                   (op-swap c r3) ;; Result of (and t3 r3) lands in r3.
+                   ;; Restore arguments.
+                   (op-push r1 t1)
+                   (op-push r2 t2)
+                   (op-set t3 'nil)
+                   ;; Restore state.
+                   (op-pop t3 sp)
+                   (op-pop t2 sp)
+                   (op-pop t1 sp)))))))
 
 (define (fn-cons r1 r2 r3)
   (lambda (state)
@@ -277,74 +285,58 @@
     (let ((a (reg state r2)))
       (if (or (not (atom? a))
               (nil? a))
-          (trace 'fn-cons-result
-                 (--> state
-                      ((op-swap r3 r2))
-                      ((op-push r3 r1))))
+          (run 'fn-cons state
+               (op-swap r3 r2)
+               (op-push r3 r1))
           (reg-set state c 'fn-cons-error)))))
-
-;; Run:
-
-(define (run tag state opcodes)
-  (trace (string-append (symbol->string tag) "-result")
-         (foldl (lambda (o s)
-                  (trace tag s)
-                  (o s))
-                state
-                opcodes)))
 
 ;; Examples:
 
-(run 'ops
-     (init-state 4)
-     (list (op-set r2 'true)
-           (op-null? r1)
-           (op-swap c r1)
-           (op-eq? r1 r2)
-           (op-atom? r2)
-           (op-set sp 'hello)
-           (op-assign c sp)
-           (op-swap-car c fr)
-           (op-null? c)
-           (op-swap-cdr sp fr)
-           (op-push r2 r1)
-           (op-set r1 'nil)
-           (op-pop r1 r2)))
+(run 'ops (init-state 4)
+     (op-set r2 'true)
+     (op-null? r1)
+     (op-swap c r1)
+     (op-eq? r1 r2)
+     (op-atom? r2)
+     (op-set sp 'hello)
+     (op-assign c sp)
+     (op-swap-car c fr)
+     (op-null? c)
+     (op-swap-cdr sp fr)
+     (op-push r2 r1)
+     (op-set r1 'nil)
+     (op-pop r1 r2))
 
-(run 'cons
-     (init-state 4)
-     (list (op-set r1 1)
-           (fn-cons r1 r2 r3)
-           (op-set r1 2)
-           (fn-cons r1 r3 r3)
-           (op-set r1 3)
-           (fn-cons r1 r3 r3)))
+(run 'cons (init-state 4)
+     (op-set r1 1)
+     (fn-cons r1 r2 r3)
+     (op-set r1 2)
+     (fn-cons r1 r3 r3)
+     (op-set r1 3)
+     (fn-cons r1 r3 r3))
 
-(run 'free
-     (init-state 4)
-     (list (op-set r1 1)
-           (fn-cons r1 r2 r3)
-           (op-set r1 2)
-           (fn-cons r1 r3 r3)
-           (fn-free r3)))
+(run 'free (init-state 4)
+     (op-set r1 1)
+     (fn-cons r1 r2 r3)
+     (op-set r1 2)
+     (fn-cons r1 r3 r3)
+     (fn-free r3))
 
-(run 'copy
-     (init-state 7)
-     (list (op-set r1 1)
-           (fn-cons r1 r2 r3)
-           (op-set r1 2)
-           (fn-cons r1 r3 r3)
-           (fn-copy r3 r2)))
+(run 'copy (init-state 7)
+     (op-set r1 1)
+     (fn-cons r1 r2 r3)
+     (op-set r1 2)
+     (fn-cons r1 r3 r3)
+     (fn-copy r3 r2))
 
-(run 'equal
-     (init-state 10)
-     (list (op-set r1 1)
-           (fn-cons r1 r2 r3)
-           (op-set r1 2)
-           (fn-cons r1 r3 r3)
-           (fn-equal? r3 r2 r1)
-           (fn-copy r3 r2)
-           (fn-equal? r3 r2 r1)
-           (op-set r1 3)
-           (fn-cons r1 r3 r3)
-           (fn-equal? r3 r2 r1)))
+(run 'equal (init-state 10)
+     (op-set r1 1)
+     (fn-cons r1 r2 r3)
+     (op-set r1 2)
+     (fn-cons r1 r3 r3)
+     (fn-equal? r3 r2 r1)
+     (fn-copy r3 r2)
+     (fn-equal? r3 r2 r1)
+     (op-set r1 3)
+     (fn-cons r1 r3 r3)
+     (fn-equal? r3 r2 r1))
