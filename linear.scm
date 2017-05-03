@@ -299,45 +299,59 @@
 
 (define (fn-equal? r1 r2 r3)
   (lambda (state)
-    (trace 'fn-equal? state)
-    (let ((a (reg state r1))
-          (b (reg state r2)))
-      (if (or (and (atom? a)
-                   (not (atom? b)))
-              (and (atom? b)
-                   (not (atom? a))))
-          (run 'fn-equal?-mismatched state
-               (op-set r3 'nil))
-          (if (and (atom? a)
-                   (atom? b))
-              (run 'fn-equal?-eq state
-                   (op-eq? r1 r2)
-                   (op-swap c r3))
-              (run 'fn-equal?-non-eq state
-                   ;; Save state.
-                   (op-push sp t1)
-                   (op-push sp t2)
-                   (op-push sp t3)
-                   ;; Compute (car r1) & (car r2).
-                   (op-pop t1 r1)
-                   (op-pop t2 r2)
-                   (fn-equal? r1 r2 r3)
-                   (op-swap t1 r1)
-                   (op-swap t2 r2)
-                   (op-swap t3 r3) ;; Result of (equal? (cdr r1) (cdr r2)) is in t3.
-                   (fn-equal? r1 r2 r3) ;; Result of (equal? (car r1) (car r2)) is in r3.
-                   (op-swap t1 r1)
-                   (op-swap t2 r2)
-                   (op-and t3 r3)
-                   (op-swap c r3) ;; Result of (and t3 r3) lands in r3.
-                   ;; Restore arguments.
-                   (op-push r1 t1)
-                   (op-push r2 t2)
-                   (op-set t3 'nil)
-                   ;; Restore state.
-                   (op-pop t3 sp)
-                   (op-pop t2 sp)
-                   (op-pop t1 sp)))))))
+    (run 'fn-equal? state
+         ;; Save state.
+         (op-push sp t1)
+         (op-push sp t2)
+         ;; Check the condition.
+         (op-atom? r1)
+         (op-swap c t1)
+         (op-atom? r2)
+         (op-swap c t2)
+         (op-and t1 t2)
+         (op-jmp-if-not-nil ':both-atoms)
+         (op-not t1)
+         (op-swap c t1)
+         (op-not t2)
+         (op-swap c t2)
+         (op-and t1 t2)
+         (op-jmp-if-not-nil ':both-non-atoms)
+         ;; An atom & non-atom.
+         (op-set r3 'nil)
+         (op-jmp ':end)
+         ':both-non-atoms
+         ;; Save some more state.
+         (op-push sp t3)
+         ;; Compute (car r1) & (car r2).
+         (op-set t1 'nil)
+         (op-pop t1 r1)
+         (op-set t2 'nil)
+         (op-pop t2 r2)
+         (fn-equal? r1 r2 r3)
+         (op-swap t1 r1)
+         (op-swap t2 r2)
+         (op-swap t3 r3) ;; Result of (equal? (cdr r1) (cdr r2)) is in t3.
+         (fn-equal? r1 r2 r3) ;; Result of (equal? (car r1) (car r2)) is in r3.
+         (op-swap t1 r1)
+         (op-swap t2 r2)
+         (op-and t3 r3)
+         (op-swap c r3) ;; Result of (and t3 r3) lands in r3.
+         ;; Restore arguments.
+         (op-push r1 t1)
+         (op-push r2 t2)
+         ;; Restore some more state.
+         (op-set t3 'nil)
+         (op-pop t3 sp)
+         (op-jmp ':end)
+         ':both-atoms
+         (op-eq? r1 r2)
+         (op-swap c r3)
+         ':end
+         ;; Restore state.
+         (op-set t2 'nil)
+         (op-pop t2 sp)
+         (op-set t1 'nil)
+         (op-pop t1 sp))))
 
 (define (fn-cons r1 r2 r3)
   (lambda (state)
@@ -422,8 +436,36 @@
      (op-set r1 2)
      (fn-cons r1 r3 r3)
      (fn-equal? r3 r2 r1)
+     (break 1)
      (fn-copy r3 r2)
      (fn-equal? r3 r2 r1)
+     (break 2)
      (op-set r1 3)
      (fn-cons r1 r3 r3)
-     (fn-equal? r3 r2 r1))
+     (fn-equal? r3 r2 r1)
+     (break 3))
+
+(run 'equal (init-state 10)
+     (op-set r1 1)
+     (op-set r2 2)
+     (fn-equal? r1 r2 r3))
+
+(run 'equal (init-state 10)
+     (op-set r1 1)
+     (op-set r2 1)
+     (fn-equal? r1 r2 r3))
+
+(run 'equal (--> (init-state 10)
+                 (reg-set r1 '(2 1 . nil))
+                 (reg-set r2 1))
+     (fn-equal? r1 r2 r3))
+
+(run 'equal (--> (init-state 10)
+                 (reg-set r1 '(2 1 . nil))
+                 (reg-set r2 '(2 1 . nil)))
+     (fn-equal? r1 r2 r3))
+
+(run 'equal (--> (init-state 10)
+                 (reg-set r1 '(1 1 . nil))
+                 (reg-set r2 '(2 2 . nil)))
+     (fn-equal? r1 r2 r3))
