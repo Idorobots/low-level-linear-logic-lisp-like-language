@@ -21,7 +21,10 @@
   (list-ref state r))
 
 (define (reg-set state r value)
-  ???)
+  (if (equal? r 0)
+      (cons value (cdr state))
+      (cons (car state)
+            (reg-set (cdr state) (- r 1) value))))
 
 ;; Opcodes:
 
