@@ -96,13 +96,28 @@
 
 ;; Opcodes (op dest src ...):
 
-;; pc := address
+;; pc := (address-of :halt)
 (define (op-halt)
   (op-jmp ':halt))
 
+;; pc := (address-of label)
 (define (op-jmp label)
   (lambda (state)
     label))
+
+;; pc := (address-of label) if c is nil.
+(define (op-jmp-if-nil label)
+  (lambda (state)
+    (if (nil? (reg state c))
+        label
+        state)))
+
+;; pc := (address-of label) if r is (not nil)
+(define (op-jmp-if-not-nil label)
+  (lambda (state)
+    (if (not (nil? (reg state c)))
+        label
+        state)))
 
 ;; c := (null? r)
 (define (op-null? r)
@@ -326,10 +341,15 @@
 
 (run 'control (init-state 1)
      ':label
-     (op-jmp ':test)
+     (op-jmp ':start)
+     ':set-r1-to-hello
      (op-set r1 'hello)
-     ':test
-     (op-set r2 'world)
+     (op-eq? r1 r2)
+     (op-jmp-if-not-nil ':label)
+     ':start
+     (op-set r2 'hello)
+     (op-eq? r1 r2)
+     (op-jmp-if-nil ':set-r1-to-hello)
      (op-halt)
      (op-set r3 'herp)
      ':halt)
