@@ -119,8 +119,8 @@
         label
         state)))
 
-;; c := (null? r)
-(define (op-null? r)
+;; c := (nil? r)
+(define (op-nil? r)
   (lambda (state)
     (if (nil? (reg state r))
         (reg-set state c 'true)
@@ -137,6 +137,13 @@
 (define (op-eq? r1 r2)
   (lambda (state)
     (if (eq? (reg state r1) (reg state r2))
+        (reg-set state c 'true)
+        (reg-set state c 'nil))))
+
+;; c := (not r)
+(define (op-not r)
+  (lambda (state)
+    (if (nil? (reg state r))
         (reg-set state c 'true)
         (reg-set state c 'nil))))
 
@@ -328,14 +335,31 @@
 
 (define (fn-cons r1 r2 r3)
   (lambda (state)
-    (trace 'fn-cons state)
-    (let ((a (reg state r2)))
-      (if (or (not (atom? a))
-              (nil? a))
-          (run 'fn-cons state
-               (op-swap r3 r2)
-               (op-push r3 r1))
-          (reg-set state c 'fn-cons-error)))))
+    (run 'fn-cons state
+         ;; Save state.
+         (op-push sp t1)
+         (op-push sp t2)
+         ;; Check proper list condition.
+         (op-atom? r2)
+         (op-swap c t1)
+         (op-not t1)
+         (op-swap c t1)
+         (op-nil? r2)
+         (op-swap c t2)
+         (op-or t1 t2)
+         (op-jmp-if-nil ':raise-error)
+         ;; Actually cons the value.
+         (op-swap r3 r2)
+         (op-push r3 r1)
+         (op-jmp ':end)
+         ':raise-error
+         (op-set c 'fn-cons-error)
+         ':end
+         ;; Restore state.
+         (op-set t2 'nil)
+         (op-pop t2 sp)
+         (op-set t1 'nil)
+         (op-pop t1 sp))))
 
 ;; Examples:
 
@@ -369,7 +393,7 @@
      (op-set r1 'nil)
      (op-pop r1 r2))
 
-(run 'cons (init-state 4)
+(run 'cons (init-state 10)
      (op-set r1 1)
      (fn-cons r1 r2 r3)
      (op-set r1 2)
