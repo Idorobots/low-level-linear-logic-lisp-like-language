@@ -2,6 +2,12 @@
 
 ;; Utils:
 
+(define-syntax -->
+  (syntax-rules ()
+    ((--> expr) expr)
+    ((--> expr (fn args ...) clauses ...) (--> (fn expr args ...) clauses ...))
+    ((--> expr clause clauses ...) (--> (clause expr) clauses ...))))
+
 (define (trace state)
   (display state)
   (newline))
@@ -47,7 +53,12 @@
         (reg-set state c 'nil))))
 
 (define (op-swap r1 r2)
-  ???)
+  (lambda (state)
+    (let ((a (reg state r1))
+          (b (reg state r2)))
+      (--> state
+          (reg-set r1 b)
+          (reg-set r2 a)))))
 
 (define (op-swap-car r1 r2)
   ???)
@@ -73,8 +84,19 @@
 ;; Run:
 
 (define (run state opcodes)
-  (foldl (lambda (s o)
+  (foldl (lambda (o s)
            (trace s)
            (o s))
          state
          opcodes))
+
+;; Examples:
+
+(trace
+ (run
+  (state 'nil 'nil 'nil 'nil 'nil)
+  (list (op-null? c)
+        (op-swap c r1)
+        (op-atom? r1)
+        (op-null? r1)
+        (op-eq? c r1))))
