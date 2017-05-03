@@ -52,6 +52,12 @@
         (reg-set state c 'true)
         (reg-set state c 'nil))))
 
+(define (op-set r1 atom)
+  ???)
+
+(define (op-assign r1 r2)
+  ???)
+
 (define (op-swap r1 r2)
   (lambda (state)
     (let ((a (reg state r1))
@@ -61,16 +67,26 @@
           (reg-set r2 a)))))
 
 (define (op-swap-car r1 r2)
-  ???)
+  (lambda (state)
+    (let ((a (reg state r1))
+          (b (reg state r2)))
+      (if (and (not (equal? r1 r2))
+               (not (symbol? b)))
+          (--> state
+               (reg-set r1 (car b))
+               (reg-set r2 (cons a (cdr b))))
+          (reg-set state c 'error)))))
 
 (define (op-swap-cdr r1 r2)
-  ???)
-
-(define (op-set r1 atom)
-  ???)
-
-(define (op-assign r1 r2)
-  ???)
+  (lambda (state)
+    (let ((a (reg state r1))
+          (b (reg state r2)))
+      (if (and (not (equal? r1 r2))
+               (not (symbol? b)))
+          (--> state
+               (reg-set r1 (cdr b))
+               (reg-set r2 (cons (car b) a)))
+          (reg-set state c 'error)))))
 
 (define (op-cons r1 r2)
   ???)
@@ -94,9 +110,13 @@
 
 (trace
  (run
-  (state 'nil 'nil 'nil 'nil 'nil)
+  (state 'nil 'nil 'nil 'nil '(nil nil nil))
   (list (op-null? c)
         (op-swap c r1)
         (op-atom? r1)
         (op-null? r1)
-        (op-eq? c r1))))
+        (op-eq? c r1)
+        (op-null? c)
+        (op-swap-car c fr)
+        (op-null? c)
+        (op-swap-cdr c fr))))
