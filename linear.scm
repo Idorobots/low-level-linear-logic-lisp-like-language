@@ -246,6 +246,7 @@
          ;; Check condition.
          (op-nil? r1)
          (op-jmp-if-not-nil ':end)
+         ;; Check what to do.
          (op-atom? r1)
          (op-jmp-if-nil ':not-atom)
          (op-set r1 'nil)
@@ -264,34 +265,37 @@
 
 (define (fn-copy r1 r2)
   (lambda (state)
-    (trace 'fn-copy state)
-    (let ((a (reg state r1))
-          (b (reg state r2)))
-      (if (nil? b)
-          (if (not (nil? a))
-              (if (atom? a)
-                  (run 'fn-copy-atom state
-                       (op-assign r2 r1))
-                  (run 'fn-copy-non-atom state
-                       ;; Save state.
-                       (op-push sp t1)
-                       (op-push sp t2)
-                       ;; Compute the (cdr r1)
-                       (op-pop t1 r1)
-                       (fn-copy r1 r2) ;; Copy (cdr r1).
-                       (op-swap t1 r1)
-                       (op-swap t2 r2) ;; Result is stored in r2.
-                       (fn-copy r1 r2) ;; Copy (car r1).
-                       (op-swap t1 r1)
-                       (op-swap t2 r2)
-                       ;; Restore the argument.
-                       (op-push r1 t1)
-                       (op-push r2 t2)
-                       ;; Restore state.
-                       (op-pop t2 sp)
-                       (op-pop t1 sp)))
-              (trace 'fn-copy-result-nil state))
-          (reg-set state c 'fn-copy-error)))))
+    (run 'fn-copy state
+         ;; Check condition.
+         (op-nil? r2)
+         (op-jmp-if-nil ':raise-error)
+         ;; Check what to do.
+         (op-atom? r1)
+         (op-jmp-if-nil ':not-atom)
+         (op-assign r2 r1)
+         (op-jmp ':end)
+         ':raise-error
+         (op-set c 'fn-copy-error)
+         (op-jmp ':end)
+         ':not-atom
+         ;; Save state.
+         (op-push sp t1)
+         (op-push sp t2)
+         ;; Compute the (cdr r1)
+         (op-pop t1 r1)
+         (fn-copy r1 r2) ;; Copy (cdr r1).
+         (op-swap t1 r1)
+         (op-swap t2 r2) ;; Result is stored in r2.
+         (fn-copy r1 r2) ;; Copy (car r1).
+         (op-swap t1 r1)
+         (op-swap t2 r2)
+         ;; Restore the argument.
+         (op-push r1 t1)
+         (op-push r2 t2)
+         ;; Restore state.
+         (op-pop t2 sp)
+         (op-pop t1 sp)
+         ':end)))
 
 (define (fn-equal? r1 r2 r3)
   (lambda (state)
