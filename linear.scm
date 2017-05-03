@@ -184,11 +184,14 @@
                      ((op-set r1 'nil) state))
               (trace 'fn-free-result-non-atom
                      (--> state
+                          ;; Save state.
                           ((op-push sp t1))
+                          ;; Compute (cdr r1).
                           ((op-pop t1 r1))
-                          ((fn-free r1))
+                          ((fn-free r1)) ;; Free (cdr r1).
                           ((op-swap t1 r1))
-                          ((fn-free r1))
+                          ((fn-free r1)) ;; Free (car r1).
+                          ;; Restore state.
                           ((op-pop t1 sp)))))
           (trace 'fn-free-result-nil state)))))
 
@@ -204,17 +207,21 @@
                          ((op-assign r2 r1) state))
                   (trace 'fn-copy-result-non-atom
                          (--> state
+                              ;; Save state.
                               ((op-push sp t1))
                               ((op-push sp t2))
+                              ;; Compute the (cdr r1)
                               ((op-pop t1 r1))
-                              ((fn-copy r1 r2))
+                              ((fn-copy r1 r2)) ;; Copy (cdr r1).
+                              ((op-swap t1 r1))
+                              ((op-swap t2 r2)) ;; Result is stored in r2.
+                              ((fn-copy r1 r2)) ;; Copy (car r1).
                               ((op-swap t1 r1))
                               ((op-swap t2 r2))
-                              ((fn-copy r1 r2))
-                              ((op-swap t1 r1))
-                              ((op-swap t2 r2))
+                              ;; Restore the argument.
                               ((op-push r1 t1))
                               ((op-push r2 t2))
+                              ;; Restore state.
                               ((op-pop t2 sp))
                               ((op-pop t1 sp)))))
               (trace 'fn-copy-result-nil state))
