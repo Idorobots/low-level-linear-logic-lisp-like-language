@@ -175,12 +175,12 @@
                      ((op-set r1 'nil) state))
               (trace 'fn-free-result-non-atom
                      (--> state
-                          ((op-push r2 sp))
-                          ((op-pop r2 r1))
+                          ((op-push t1 sp))
+                          ((op-pop t1 r1))
                           ((fn-free r1))
-                          ((op-swap r2 r1))
+                          ((op-swap t1 r1))
                           ((fn-free r1))
-                          ((op-pop r2 sp)))))
+                          ((op-pop t1 sp)))))
           (trace 'fn-free-result-nil state)))))
 
 (define (fn-copy r1 r2)
