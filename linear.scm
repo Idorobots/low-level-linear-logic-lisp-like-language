@@ -100,7 +100,13 @@
           (reg-set state c 'op-swap-cdr-error)))))
 
 (define (op-cons r1 r2)
-  ???)
+  (lambda (state)
+    (if (not (equal? r1 r2))
+        (--> state
+             ((op-swap-car r1 fr))
+             ((op-swap r2 fr))
+             ((op-swap-cdr fr r2)))
+        (reg-set state c 'op-cons-error))))
 
 (define (op-push r1 r2)
   (op-cons r1 r2))
@@ -131,4 +137,5 @@
         (op-assign c sp)
         (op-swap-car c fr)
         (op-null? c)
-        (op-swap-cdr sp fr))))
+        (op-swap-cdr sp fr)
+        (op-cons r1 r2))))
