@@ -338,15 +338,12 @@
     (run 'fn-cons state
          ;; Save state.
          (op-push sp t1)
-         (op-push sp t2)
          ;; Check proper list condition.
          (op-atom? r2)
-         (op-swap c t1)
-         (op-not t1)
+         (op-not c)
          (op-swap c t1)
          (op-nil? r2)
-         (op-swap c t2)
-         (op-or t1 t2)
+         (op-or t1 c)
          (op-jmp-if-nil ':raise-error)
          ;; Actually cons the value.
          (op-swap r3 r2)
@@ -356,8 +353,6 @@
          (op-set c 'fn-cons-error)
          ':end
          ;; Restore state.
-         (op-set t2 'nil)
-         (op-pop t2 sp)
          (op-set t1 'nil)
          (op-pop t1 sp))))
 
@@ -393,7 +388,7 @@
      (op-set r1 'nil)
      (op-pop r1 r2))
 
-(run 'cons (init-state 10)
+(run 'cons (init-state 5)
      (op-set r1 1)
      (fn-cons r1 r2 r3)
      (op-set r1 2)
