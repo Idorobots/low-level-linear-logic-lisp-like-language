@@ -8,11 +8,15 @@
     ((--> expr (fn args ...) clauses ...) (--> (fn expr args ...) clauses ...))
     ((--> expr clause clauses ...) (--> (clause expr) clauses ...))))
 
-(define (trace state)
+(define (trace tag state)
+  (display tag)
+  (display ": ")
   (display state)
-  (newline))
+  (newline)
+  state)
 
-(define atom? symbol?)
+(define (atom? a)
+  (or (symbol? a) (number? a)))
 
 (define (nil? a)
   (eq? a 'nil))
@@ -126,20 +130,46 @@
                ((op-swap-car r1 fr)))
           (reg-set state c 'op-pop-error)))))
 
+;; Functions:
+
+(define (fn-free r1) ;; NOTE Argument has to be passed as the r1.
+  (lambda (state)
+    (trace 'fn-free state)
+    (let ((a (reg state r1)))
+      (if (not (nil? a))
+          (if (atom? a)
+              (trace 'fn-free-result-atom
+                     ((op-set r1 'nil) state))
+              (trace 'fn-free-result-non-atom
+                     (--> state
+                          ((op-push r2 sp))
+                          ((op-pop r2 r1))
+                          ((fn-free r1))
+                          ((op-swap r2 r1))
+                          ((fn-free r1))
+                          ((op-pop r2 sp)))))
+          (trace 'fn-free-result-nil state)))))
+
+(define (fn-copy r1 r2)
+  ???)
+
+(define (fn-equal? r1 r2)
+  ???)
+
 ;; Run:
 
 (define (run state opcodes)
   (foldl (lambda (o s)
-           (trace s)
+           (trace 'run s)
            (o s))
          state
          opcodes))
 
 ;; Examples:
 
-(trace
+(trace 'result
  (run
-  (state 'nil 'nil 'nil 'nil '(nil nil nil))
+  (state 'nil 'nil 'nil 'nil '(nil nil nil . nil))
   (list (op-set r2 'true)
         (op-null? r1)
         (op-swap c r1)
@@ -153,3 +183,13 @@
         (op-cons r1 r2)
         (op-set r1 'nil)
         (op-pop r1 r2))))
+
+(trace 'result
+ (run
+  (state 'nil 'nil 'nil 'nil '(nil nil nil . nil))
+  (list (op-set r1 1)
+        (op-cons r1 r2)
+        (op-set r1 2)
+        (op-cons r1 r2)
+        (op-swap r1 r2)
+        (fn-free r1))))
