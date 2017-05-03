@@ -27,25 +27,27 @@
 
 ;; State: (C R1 R2 SP FR)
 
-(define c 0)
-(define r1 1)
-(define r2 2)
-(define r3 3)
-(define t1 4)
-(define t2 5)
-(define t3 6)
-(define sp 7)
-(define fr 8)
+(define pc 0)
+(define c 1)
+(define r1 2)
+(define r2 3)
+(define r3 4)
+(define t1 5)
+(define t2 6)
+(define t3 7)
+(define sp 8)
+(define fr 9)
 
-(define (state c r1 r2 r3 t1 t2 t3 sp fr)
-  (list c r1 r2 r3 t1 t2 t3 sp fr))
+(define (state pc c r1 r2 r3 t1 t2 t3 sp fr)
+  (list pc c r1 r2 r3 t1 t2 t3 sp fr))
 
 (define (init-state cells)
   (define (make-cells n)
     (if (equal? n 1)
         'nil
         (cons 'nil (make-cells (- n 1)))))
-  (state 'init                ;; Initial state.
+  (state 0
+         'init                ;; Initial state.
          'nil 'nil 'nil       ;; Main registers.
          'nil 'nil 'nil       ;; Temp registers.
          'nil                 ;; Stack pointer.
@@ -62,15 +64,45 @@
 
 ;; Run:
 
-(define (run tag state . opcodes)
-  (trace (string-append (symbol->string tag) "-result")
-         (foldl (lambda (o s)
-                  (trace tag s)
-                  (o s))
-                state
-                opcodes)))
+(define (run tag state . ops)
+  (define (set-pc state value)
+    (reg-set state pc value))
+  (define (inc-pc state)
+    (set-pc state (+ 1 (reg state pc))))
+  (define (label-index ops label)
+    (let loop ((i 0)
+               (remaining ops))
+      (if (or (null? remaining)
+              (equal? label (car remaining)))
+          i
+          (loop (+ i 1) (cdr remaining)))))
+  (let* ((curr-pc (reg state pc))
+         (curr-op (if (>= curr-pc (length ops))
+                      ':halt
+                      (list-ref ops curr-pc))))
+    (cond ((equal? ':halt curr-op)
+           (trace (string-append (symbol->string tag) "-result") state))
+          ((symbol? curr-op)
+           (apply run tag (inc-pc state) ops))
+          ((procedure? curr-op)
+           (trace tag state)
+           (let ((result (curr-op (set-pc state 0)))) ;; FIXME Needed in order to support functions.
+             (apply run
+                    tag
+                    (if (symbol? result)
+                        (set-pc state (label-index ops result))
+                        (set-pc result (+ 1 curr-pc)))
+                    ops))))))
 
 ;; Opcodes (op dest src ...):
+
+;; pc := address
+(define (op-halt)
+  (op-jmp ':halt))
+
+(define (op-jmp label)
+  (lambda (state)
+    label))
 
 ;; c := (null? r)
 (define (op-null? r)
@@ -291,6 +323,16 @@
           (reg-set state c 'fn-cons-error)))))
 
 ;; Examples:
+
+(run 'control (init-state 1)
+     ':label
+     (op-jmp ':test)
+     (op-set r1 'hello)
+     ':test
+     (op-set r2 'world)
+     (op-halt)
+     (op-set r3 'herp)
+     ':halt)
 
 (run 'ops (init-state 4)
      (op-set r2 'true)
