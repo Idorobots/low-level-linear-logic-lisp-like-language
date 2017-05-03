@@ -242,23 +242,25 @@
 
 (define (fn-free r1)
   (lambda (state)
-    (trace 'fn-free state)
-    (let ((a (reg state r1)))
-      (if (not (nil? a))
-          (if (atom? a)
-              (run 'fn-free-atom state
-                   (op-set r1 'nil))
-              (run 'fn-free-non-atom state
-                   ;; Save state.
-                   (op-push sp t1)
-                   ;; Compute (cdr r1).
-                   (op-pop t1 r1)
-                   (fn-free r1) ;; Free (cdr r1).
-                   (op-swap t1 r1)
-                   (fn-free r1) ;; Free (car r1).
-                   ;; Restore state.
-                   (op-pop t1 sp)))
-          (trace 'fn-free-result-nil state)))))
+    (run 'fn-free state
+         ;; Check condition.
+         (op-nil? r1)
+         (op-jmp-if-not-nil ':end)
+         (op-atom? r1)
+         (op-jmp-if-nil ':not-atom)
+         (op-set r1 'nil)
+         (op-jmp ':end)
+         ':not-atom
+         ;; Save state.
+         (op-push sp t1)
+         ;; Compute (cdr r1).
+         (op-pop t1 r1)
+         (fn-free r1) ;; Free (cdr r1).
+         (op-swap t1 r1)
+         (fn-free r1) ;; Free (car r1).
+         ;; Restore state.
+         (op-pop t1 sp)
+         ':end)))
 
 (define (fn-copy r1 r2)
   (lambda (state)
@@ -396,7 +398,7 @@
      (op-set r1 3)
      (fn-cons r1 r3 r3))
 
-(run 'free (init-state 4)
+(run 'free (init-state 5)
      (op-set r1 1)
      (fn-cons r1 r2 r3)
      (op-set r1 2)
