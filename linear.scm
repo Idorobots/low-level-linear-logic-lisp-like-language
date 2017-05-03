@@ -285,60 +285,66 @@
 
 ;; Run:
 
-(define (run state opcodes)
-  (foldl (lambda (o s)
-           (trace 'run s)
-           (o s))
-         state
-         opcodes))
+(define (run tag state opcodes)
+  (trace (string-append (symbol->string tag) "-result")
+         (foldl (lambda (o s)
+                  (trace tag s)
+                  (o s))
+                state
+                opcodes)))
 
 ;; Examples:
 
-(trace 'result
- (run
-  (init-state 4)
-  (list (op-set r2 'true)
-        (op-null? r1)
-        (op-swap c r1)
-        (op-eq? r1 r2)
-        (op-atom? r2)
-        (op-set sp 'hello)
-        (op-assign c sp)
-        (op-swap-car c fr)
-        (op-null? c)
-        (op-swap-cdr sp fr)
-        (op-push r2 r1)
-        (op-set r1 'nil)
-        (op-pop r1 r2))))
+(run 'ops
+     (init-state 4)
+     (list (op-set r2 'true)
+           (op-null? r1)
+           (op-swap c r1)
+           (op-eq? r1 r2)
+           (op-atom? r2)
+           (op-set sp 'hello)
+           (op-assign c sp)
+           (op-swap-car c fr)
+           (op-null? c)
+           (op-swap-cdr sp fr)
+           (op-push r2 r1)
+           (op-set r1 'nil)
+           (op-pop r1 r2)))
 
-(trace 'result
- (run
-  (init-state 4)
-  (list (op-set r1 1)
-        (fn-cons r1 r2 r3)
-        (op-set r1 2)
-        (fn-cons r1 r3 r3)
-        (fn-free r3))))
+(run 'cons
+     (init-state 4)
+     (list (op-set r1 1)
+           (fn-cons r1 r2 r3)
+           (op-set r1 2)
+           (fn-cons r1 r3 r3)
+           (op-set r1 3)
+           (fn-cons r1 r3 r3)))
 
-(trace 'result
- (run
-  (init-state 7)
-  (list (op-set r1 1)
-        (fn-cons r1 r2 r3)
-        (op-set r1 2)
-        (fn-cons r1 r3 r3)
-        (fn-copy r3 r2))))
+(run 'free
+     (init-state 4)
+     (list (op-set r1 1)
+           (fn-cons r1 r2 r3)
+           (op-set r1 2)
+           (fn-cons r1 r3 r3)
+           (fn-free r3)))
 
-(trace 'result
- (run
-  (init-state 10)
-  (list (op-set r1 1)
-        (fn-cons r1 r2 r3)
-        (op-set r1 2)
-        (fn-cons r1 r3 r3)
-        (fn-equal? r3 r2 r1)
-        (fn-copy r3 r2)
-        (fn-equal? r3 r2 r1)
-        (op-set r1 3)
-        (fn-cons r1 r3 r3)
-        (fn-equal? r3 r2 r1))))
+(run 'copy
+     (init-state 7)
+     (list (op-set r1 1)
+           (fn-cons r1 r2 r3)
+           (op-set r1 2)
+           (fn-cons r1 r3 r3)
+           (fn-copy r3 r2)))
+
+(run 'equal
+     (init-state 10)
+     (list (op-set r1 1)
+           (fn-cons r1 r2 r3)
+           (op-set r1 2)
+           (fn-cons r1 r3 r3)
+           (fn-equal? r3 r2 r1)
+           (fn-copy r3 r2)
+           (fn-equal? r3 r2 r1)
+           (op-set r1 3)
+           (fn-cons r1 r3 r3)
+           (fn-equal? r3 r2 r1)))
