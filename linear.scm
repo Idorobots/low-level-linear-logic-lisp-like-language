@@ -26,11 +26,24 @@
 (define c 0)
 (define r1 1)
 (define r2 2)
-(define sp 3)
-(define fr 4)
+(define t1 3)
+(define t2 4)
+(define sp 5)
+(define fr 6)
 
-(define (state c r1 r2 sp fr)
-  (list c r1 r2 sp fr))
+(define (state c r1 r2 t1 t2 sp fr)
+  (list c r1 r2 t1 t2 sp fr))
+
+(define (init-state cells)
+  (define (make-cells n)
+    (if (equal? n 1)
+        'nil
+        (cons 'nil (make-cells (- n 1)))))
+  (state 'init                ;; Initial state.
+         'nil 'nil            ;; Main registers.
+         'nil 'nil            ;; Temp registers.
+         'nil                 ;; Stack pointer.
+         (make-cells cells))) ;; Free list.
 
 (define (reg state r)
   (list-ref state r))
@@ -151,7 +164,33 @@
           (trace 'fn-free-result-nil state)))))
 
 (define (fn-copy r1 r2)
-  ???)
+  (lambda (state)
+    (trace 'fn-copy state)
+    (let ((a (reg state r1))
+          (b (reg state r2)))
+      (if (nil? b)
+          (if (not (nil? a))
+              (if (atom? a)
+                  (trace 'fn-copy-result-atom
+                         ((op-assign r2 r1) state))
+                  (trace 'fn-copy-result-non-atom
+                         (--> state
+                              ((op-push t1 sp))
+                              ((op-push t2 sp))
+                              ((op-pop t1 r1))
+                              ((fn-copy r1 r2))
+                              ((op-swap t1 r1))
+                              ((op-swap t2 r2))
+                              ((fn-copy r1 r2))
+                              ((op-swap t1 r1))
+                              ((op-swap t2 r2))
+                              ((op-push t1 r1))
+                              ((op-push t2 r2))
+                              ((op-pop t2 sp))
+                              ((op-pop t1 sp))
+                              )))
+              (trace 'fn-copy-result-nil state))
+          (reg-set state c 'fn-copy-error)))))
 
 (define (fn-equal? r1 r2)
   ???)
@@ -169,7 +208,7 @@
 
 (trace 'result
  (run
-  (state 'nil 'nil 'nil 'nil '(nil nil nil . nil))
+  (init-state 4)
   (list (op-set r2 'true)
         (op-null? r1)
         (op-swap c r1)
@@ -186,10 +225,20 @@
 
 (trace 'result
  (run
-  (state 'nil 'nil 'nil 'nil '(nil nil nil . nil))
+  (init-state 4)
   (list (op-set r1 1)
         (op-cons r1 r2)
         (op-set r1 2)
         (op-cons r1 r2)
         (op-swap r1 r2)
         (fn-free r1))))
+
+(trace 'result
+ (run
+  (init-state 7)
+  (list (op-set r1 1)
+        (op-cons r1 r2)
+        (op-set r1 2)
+        (op-cons r1 r2)
+        (op-swap r1 r2)
+        (fn-copy r1 r2))))
