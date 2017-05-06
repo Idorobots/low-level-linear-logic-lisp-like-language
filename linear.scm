@@ -228,15 +228,14 @@
 ;; r1 := (car r2), r2 := (cdr r2)
 (define (op-pop r1 r2)
   (lambda (state)
-    (let ((a (reg state r1))
-          (b (reg state r2)))
-      (if (and (nil? a)
-               (not (atom? b)))
-          (run 'op-pop state
-               (op-swap-cdr fr r2)
-               (op-swap r2 fr)
-               (op-swap-car r1 fr))
-          (reg-set state c 'op-pop-error)))))
+    (if (and (not (equal? r1 r2))
+             (not (atom? (reg state r2))))
+        (run 'op-pop state
+             (op-set r1 'nil)
+             (op-swap-cdr fr r2)
+             (op-swap r2 fr)
+             (op-swap-car r1 fr))
+        (reg-set state c 'op-pop-error))))
 
 ;; Functions (fn args ... result):
 
@@ -323,9 +322,7 @@
          ;; Save some more state.
          (op-push sp t3)
          ;; Compute (car r1) & (car r2).
-         (op-set t1 'nil)
          (op-pop t1 r1)
-         (op-set t2 'nil)
          (op-pop t2 r2)
          (fn-equal? r1 r2 r3)
          (op-swap t1 r1)
@@ -340,7 +337,6 @@
          (op-push r1 t1)
          (op-push r2 t2)
          ;; Restore some more state.
-         (op-set t3 'nil)
          (op-pop t3 sp)
          (op-jmp ':end)
          ':both-atoms
@@ -348,9 +344,7 @@
          (op-swap c r3)
          ':end
          ;; Restore state.
-         (op-set t2 'nil)
          (op-pop t2 sp)
-         (op-set t1 'nil)
          (op-pop t1 sp))))
 
 (define (fn-cons r1 r2 r3)
@@ -373,7 +367,6 @@
          (op-set c 'fn-cons-error)
          ':end
          ;; Restore state.
-         (op-set t1 'nil)
          (op-pop t1 sp))))
 
 ;; Examples:
