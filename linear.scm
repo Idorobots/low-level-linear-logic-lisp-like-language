@@ -65,34 +65,35 @@
 ;; Run:
 
 (define (run tag state . ops)
-  (define (set-pc state value)
-    (reg-set state pc value))
-  (define (inc-pc state)
-    (set-pc state (+ 1 (reg state pc))))
-  (define (label-index ops label)
-    (let loop ((i 0)
-               (remaining ops))
-      (if (or (null? remaining)
-              (equal? label (car remaining)))
-          i
-          (loop (+ i 1) (cdr remaining)))))
-  (let* ((curr-pc (reg state pc))
-         (curr-op (if (>= curr-pc (length ops))
-                      ':halt
-                      (list-ref ops curr-pc))))
-    (cond ((equal? ':halt curr-op)
-           (trace (string-append (symbol->string tag) "-result") state))
-          ((symbol? curr-op)
-           (apply run tag (inc-pc state) ops))
-          ((procedure? curr-op)
-           (trace tag state)
-           (let ((result (curr-op (set-pc state 0)))) ;; FIXME Needed in order to support functions.
-             (apply run
-                    tag
-                    (if (symbol? result)
-                        (set-pc state (label-index ops result))
-                        (set-pc result (+ 1 curr-pc)))
-                    ops))))))
+  (define (do-run tag state ops)
+    (define (set-pc state value)
+      (reg-set state pc value))
+    (define (inc-pc state)
+      (set-pc state (+ 1 (reg state pc))))
+    (define (label-index ops label)
+      (let loop ((i 0)
+                 (remaining ops))
+        (if (or (null? remaining)
+                (equal? label (car remaining)))
+            i
+            (loop (+ i 1) (cdr remaining)))))
+    (let* ((curr-pc (reg state pc))
+           (curr-op (if (>= curr-pc (length ops))
+                        ':halt
+                        (list-ref ops curr-pc))))
+      (cond ((equal? ':halt curr-op)
+             (trace (string-append (symbol->string tag) "-result") state))
+            ((symbol? curr-op)
+             (do-run tag (inc-pc state) ops))
+            ((procedure? curr-op)
+             (trace tag state)
+             (let ((result (curr-op (set-pc state 0)))) ;; FIXME Needed in order to support functions.
+               (do-run tag
+                       (if (symbol? result)
+                           (set-pc state (label-index ops result))
+                           (set-pc result (+ 1 curr-pc)))
+                       ops))))))
+  (do-run tag state (flatten ops)))
 
 ;; Opcodes (op dest src ...):
 
@@ -213,29 +214,20 @@
                (reg-set r2 (cons (car b) a)))
           (reg-set state c 'op-swap-cdr-error)))))
 
-;; Somewhat functions:
+;; Macros:
 
 ;; r1 := (cons r2 r1), r2 := nil
-(define (op-push r1 r2)
-  (lambda (state)
-    (if (not (equal? r1 r2))
-        (run 'op-push state
-             (op-swap-cdr r1 fr)
-             (op-swap-car r2 fr)
-             (op-swap r1 fr))
-        (reg-set state c 'op-cons-error))))
+(define (mc-push r1 r2)
+  (list (op-swap-cdr r1 fr)
+        (op-swap-car r2 fr)
+        (op-swap r1 fr)))
 
 ;; r1 := (car r2), r2 := (cdr r2)
-(define (op-pop r1 r2)
-  (lambda (state)
-    (if (and (not (equal? r1 r2))
-             (not (atom? (reg state r2))))
-        (run 'op-pop state
-             (op-set r1 'nil)
-             (op-swap-cdr fr r2)
-             (op-swap r2 fr)
-             (op-swap-car r1 fr))
-        (reg-set state c 'op-pop-error))))
+(define (mc-pop r1 r2)
+  (list (op-set r1 'nil)
+        (op-swap-cdr fr r2)
+        (op-swap r2 fr)
+        (op-swap-car r1 fr)))
 
 ;; Functions (fn args ... result):
 
@@ -252,14 +244,14 @@
          (op-jmp ':end)
          ':not-atom
          ;; Save state.
-         (op-push sp t1)
+         (mc-push sp t1)
          ;; Compute (cdr r1).
-         (op-pop t1 r1)
+         (mc-pop t1 r1)
          (fn-free r1) ;; Free (cdr r1).
          (op-swap t1 r1)
          (fn-free r1) ;; Free (car r1).
          ;; Restore state.
-         (op-pop t1 sp)
+         (mc-pop t1 sp)
          ':end)))
 
 (define (fn-copy r1 r2)
@@ -278,10 +270,10 @@
          (op-jmp ':end)
          ':not-atom
          ;; Save state.
-         (op-push sp t1)
-         (op-push sp t2)
+         (mc-push sp t1)
+         (mc-push sp t2)
          ;; Compute the (cdr r1)
-         (op-pop t1 r1)
+         (mc-pop t1 r1)
          (fn-copy r1 r2) ;; Copy (cdr r1).
          (op-swap t1 r1)
          (op-swap t2 r2) ;; Result is stored in r2.
@@ -289,19 +281,19 @@
          (op-swap t1 r1)
          (op-swap t2 r2)
          ;; Restore the argument.
-         (op-push r1 t1)
-         (op-push r2 t2)
+         (mc-push r1 t1)
+         (mc-push r2 t2)
          ;; Restore state.
-         (op-pop t2 sp)
-         (op-pop t1 sp)
+         (mc-pop t2 sp)
+         (mc-pop t1 sp)
          ':end)))
 
 (define (fn-equal? r1 r2 r3)
   (lambda (state)
     (run 'fn-equal? state
          ;; Save state.
-         (op-push sp t1)
-         (op-push sp t2)
+         (mc-push sp t1)
+         (mc-push sp t2)
          ;; Check the condition.
          (op-atom? r1)
          (op-swap c t1)
@@ -320,10 +312,10 @@
          (op-jmp ':end)
          ':both-non-atoms
          ;; Save some more state.
-         (op-push sp t3)
+         (mc-push sp t3)
          ;; Compute (car r1) & (car r2).
-         (op-pop t1 r1)
-         (op-pop t2 r2)
+         (mc-pop t1 r1)
+         (mc-pop t2 r2)
          (fn-equal? r1 r2 r3)
          (op-swap t1 r1)
          (op-swap t2 r2)
@@ -334,24 +326,24 @@
          (op-and t3 r3)
          (op-swap c r3) ;; Result of (and t3 r3) lands in r3.
          ;; Restore arguments.
-         (op-push r1 t1)
-         (op-push r2 t2)
+         (mc-push r1 t1)
+         (mc-push r2 t2)
          ;; Restore some more state.
-         (op-pop t3 sp)
+         (mc-pop t3 sp)
          (op-jmp ':end)
          ':both-atoms
          (op-eq? r1 r2)
          (op-swap c r3)
          ':end
          ;; Restore state.
-         (op-pop t2 sp)
-         (op-pop t1 sp))))
+         (mc-pop t2 sp)
+         (mc-pop t1 sp))))
 
 (define (fn-cons r1 r2 r3)
   (lambda (state)
     (run 'fn-cons state
          ;; Save state.
-         (op-push sp t1)
+         (mc-push sp t1)
          ;; Check proper list condition.
          (op-atom? r2)
          (op-not c)
@@ -361,13 +353,13 @@
          (op-jmp-if-nil ':raise-error)
          ;; Actually cons the value.
          (op-swap r3 r2)
-         (op-push r3 r1)
+         (mc-push r3 r1)
          (op-jmp ':end)
          ':raise-error
          (op-set c 'fn-cons-error)
          ':end
          ;; Restore state.
-         (op-pop t1 sp))))
+         (mc-pop t1 sp))))
 
 ;; Examples:
 
@@ -397,9 +389,9 @@
      (op-swap-car c fr)
      (op-nil? c)
      (op-swap-cdr sp fr)
-     (op-push r2 r1)
+     (mc-push r2 r1)
      (op-set r1 'nil)
-     (op-pop r1 r2))
+     (mc-pop r1 r2))
 
 (run 'cons (init-state 5)
      (op-set r1 1)
