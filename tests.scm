@@ -23,7 +23,17 @@
 ;; Actual tests:
 
 (-->
- (test 'control-flow (init-state 1)
+ (test 'spilling (init-state 5)
+       (op-set t1 'hello)
+       (op-set t2 'world)
+       (mc-spill (list t1)
+                 (op-set t1 'herp)
+                 (op-set t2 'derp)))
+ (reg-assert t1 'hello)
+ (reg-assert t2 'derp))
+
+(-->
+ (test 'operations (init-state 1)
        ':label
        (op-jmp ':start)
        ':set-r1-to-hello

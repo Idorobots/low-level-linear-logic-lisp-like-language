@@ -236,7 +236,7 @@
         (op-swap r2 fr)
         (op-swap-car r1 fr)))
 
-;; If conditional.
+;; Conditionals
 (define (mc-if cond then else)
   (let ((:else-label (gen-label ':else))
         (:end-label (gen-label ':end)))
@@ -252,3 +252,13 @@
   (mc-if cond
          body
          (mc-noop)))
+
+;; Register spilling
+(define (mc-spill regs . body)
+  (list (map (lambda (r)
+               (mc-push sp r))
+             regs)
+        body
+        (map (lambda (r)
+               (mc-pop r sp))
+             (reverse regs))))
