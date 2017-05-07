@@ -38,6 +38,11 @@
 (define (tagged tag suffix)
   (string->symbol (string-append (symbol->string tag) suffix)))
 
+(define (gen-label label)
+  (string->symbol (string-append (symbol->string label)
+                                 "-"
+                                 (symbol->string (gensym)))))
+
 ;; State: (C R1 R2 SP FR)
 
 (define :halt -1)
@@ -271,6 +276,17 @@
         (op-swap r2 fr)
         (op-swap-car r1 fr)))
 
+(define (mc-if cond then else)
+  (let ((:else-label (gen-label ':else))
+        (:end-label (gen-label ':end)))
+    (list cond
+          (op-jmp-if-nil :else-label)
+          then
+          (op-jmp :end-label)
+          :else-label
+          else
+          :end-label)))
+
 ;; Functions (fn args ... result):
 
 (define (fn-free r1)
@@ -408,6 +424,29 @@
            (mc-pop t1 sp)))))
 
 ;; Examples:
+
+(run 'if (init-state 1)
+     (op-set r1 'true)
+     (mc-if (op-nil? r1)
+            (op-set t1 'then)
+            (op-set t1 'else))
+     (mc-if (op-nil? r2)
+            (op-set t2 'then)
+            (op-set t2 'else))
+     (mc-if (list (op-nil? r3)
+                  (op-swap c r1)
+                  (op-atom? t1)
+                  (op-and c r1))
+            (op-set t3 'then)
+            (op-set t3 'else)))
+
+(run 'if (--> (init-state 1)
+              (reg-set r1 '(3 2 1 . nil)))
+     (mc-if (op-nil? r1)
+            (op-set t1 'is-nil)
+            (mc-if (op-atom? r1)
+                   (op-set t1 'is-atom)
+                   (op-set t1 'is-list))))
 
 (run 'control (init-state 1)
      ':label
