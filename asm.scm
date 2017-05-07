@@ -66,7 +66,7 @@
       (set-pc state (+ 1 (reg state pc))))
     (let* ((curr-pc (reg state pc)))
       (if (equal? :halt curr-pc)
-          (trace (tagged tag "-result") state)
+          state
           (begin (trace tag state)
                  (let ((result ((list-ref ops curr-pc)
                                 (set-pc state 0)))) ;; FIXME Needed in order to support functions.
@@ -75,11 +75,12 @@
                                (set-pc state result)
                                (set-pc result (+ 1 curr-pc)))
                            ops))))))
-  (do-run tag state
-          (assemble (tagged tag "-assembly")
-                    (append code
-                            (list (op-halt)
-                                  ':halt)))))
+  (trace (tagged tag "-result")
+         (do-run tag state
+                 (assemble (tagged tag "-assembly")
+                           (append code
+                                   (list (op-halt)
+                                         ':halt))))))
 
 ;; Opcodes (op dest src ...):
 

@@ -41,11 +41,6 @@
                                  "-"
                                  (symbol->string (gensym)))))
 
-(define (reg-assert state r value)
-  (if (equal? (reg state r) value)
-      state
-      (error (format "Register ~s was not equal to ~s in ~s" r value state))))
-
 (define (make-cells n)
   (if (equal? n 1)
       'nil
