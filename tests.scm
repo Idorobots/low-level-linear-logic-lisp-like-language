@@ -23,6 +23,14 @@
 ;; Actual tests:
 
 (-->
+ (test 'running (init-state 1)
+       (op-assign t1 pc)
+       (op-assign t2 pc))
+ (reg-assert pc -1)
+ (reg-assert t1 0)
+ (reg-assert t2 1))
+
+(-->
  (test 'spilling (init-state 5)
        (op-set t1 'hello)
        (op-set t2 'world)
@@ -31,6 +39,33 @@
                  (op-set t2 'derp)))
  (reg-assert t1 'hello)
  (reg-assert t2 'derp))
+
+(-->
+ (test 'basic-ops (init-state 4)
+       (op-set r2 'true)
+       (op-nil? r1)
+       (op-swap c r1)
+       (op-eq? r1 r2)
+       (op-atom? r2)
+       (op-set sp 'hello)
+       (op-assign c sp)
+       (op-swap-car c fr)
+       (op-nil? c)
+       (op-swap-cdr sp fr)
+       (mc-push r2 r1)
+       (op-set r1 'nil)
+       (mc-pop r1 r2)
+       (op-set t1 25)
+       (op-set t2 3)
+       (op-sub t1 t2)
+       (op-set t3 5)
+       (op-add t1 t3))
+ (reg-assert r1 'true)
+ (reg-assert r2 'true)
+ (reg-assert fr '(nil . hello))
+ (reg-assert t1 27)
+ (reg-assert t2 3)
+ (reg-assert t3 5))
 
 (-->
  (test 'operations (init-state 1)
@@ -92,23 +127,24 @@
  (reg-assert t1 'is-list))
 
 (-->
- (test 'basic-ops (init-state 4)
-       (op-set r2 'true)
-       (op-nil? r1)
-       (op-swap c r1)
-       (op-eq? r1 r2)
-       (op-atom? r2)
-       (op-set sp 'hello)
-       (op-assign c sp)
-       (op-swap-car c fr)
-       (op-nil? c)
-       (op-swap-cdr sp fr)
-       (mc-push r2 r1)
-       (op-set r1 'nil)
-       (mc-pop r1 r2))
- (reg-assert r1 'true)
- (reg-assert r2 'true)
- (reg-assert fr '(nil . hello)))
+ (test 'functions (init-state 5)
+       (op-set r1 23)
+       (mc-call ':rand)
+       (op-set r2 23)
+       (op-halt)
+       (mc-define ':rand
+                  (break 1)
+                  (op-set r1 5)
+                  (break 2)))
+ (reg-assert r1 5)
+ (reg-assert r2 23))
+
+(-->
+ (test 'basic-cons (init-state 5)
+       (op-set r1 1)
+       (op-set r2 'nil)
+       (fn-cons r1 r2 r3))
+ (reg-assert r3 '(1 . nil)))
 
 (-->
  (test 'cons (init-state 5)
@@ -136,6 +172,14 @@
        (fn-free r3))
  (reg-assert r3 'nil)
  (reg-assert fr (make-cells 5)))
+
+(-->
+ (test 'basic-copy (--> (init-state 7)
+                        (reg-set r1 '(3 2 1 . nil)))
+       (fn-copy r1 r2))
+ (reg-assert r1 '(3 2 1 . nil)) ;; 0 cells, supplied externally
+ (reg-assert r2 '(3 2 1 . nil)) ;; 3 cells
+ (reg-assert fr (make-cells 4)))
 
 (-->
  (test 'copy (init-state 7)

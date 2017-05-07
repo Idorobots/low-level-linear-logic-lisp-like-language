@@ -2,6 +2,27 @@
 
 (load "utils.scm")
 
+;; Utils
+
+(define (break tag)
+  (lambda (labels)
+    (lambda (state)
+      (trace tag state))))
+
+(define (set-pc-jmp state value)
+  ;; Accomodates the pc increment when running.
+  (reg-set state pc (- value 1)))
+
+(define (make-op-math op r1 r2)
+  (lambda (labels)
+    (lambda (state)
+      (let ((a (reg state r1))
+            (b (reg state r2)))
+        (if (and (number? r1)
+                 (number? r2))
+            (reg-set state r1 (op a b))
+            (reg-set state c 'op-math-error))))))
+
 ;; State: (C R1 R2 SP FR)
 
 (define :halt -1)
@@ -60,21 +81,15 @@
 
 (define (run tag state . code)
   (define (do-run tag state ops)
-    (define (set-pc state value)
-      (reg-set state pc value))
     (define (inc-pc state)
-      (set-pc state (+ 1 (reg state pc))))
+      (reg-set state pc (+ 1 (reg state pc))))
     (let* ((curr-pc (reg state pc)))
       (if (equal? :halt curr-pc)
           state
-          (begin (trace tag state)
-                 (let ((result ((list-ref ops curr-pc)
-                                (set-pc state 0)))) ;; FIXME Needed in order to support functions.
-                   (do-run tag
-                           (if (number? result)
-                               (set-pc state result)
-                               (set-pc result (+ 1 curr-pc)))
-                           ops))))))
+          (do-run tag
+                  (inc-pc ((list-ref ops curr-pc)
+                           (trace tag state)))
+                  ops))))
   (trace (tagged tag "-result")
          (do-run tag state
                  (assemble (tagged tag "-assembly")
@@ -88,20 +103,20 @@
 (define (op-halt)
   (lambda (labels)
     (lambda (state)
-      :halt)))
+      (set-pc-jmp state :halt))))
 
 ;; pc := (address-of label)
 (define (op-jmp label)
   (lambda (labels)
     (lambda (state)
-      (label-offset labels label))))
+      (set-pc-jmp state (label-offset labels label)))))
 
 ;; pc := (address-of label) if c is nil.
 (define (op-jmp-if-nil label)
   (lambda (labels)
     (lambda (state)
       (if (nil? (reg state c))
-          (label-offset labels label)
+          (set-pc-jmp state (label-offset labels label))
           state))))
 
 ;; pc := (address-of label) if r is (not nil)
@@ -109,7 +124,7 @@
   (lambda (labels)
     (lambda (state)
       (if (not (nil? (reg state c)))
-          (label-offset labels label)
+          (set-pc-jmp state (label-offset labels label))
           state))))
 
 ;; c := (nil? r)
@@ -217,6 +232,12 @@
                  (reg-set r2 (cons (car b) a)))
             (reg-set state c 'op-swap-cdr-error))))))
 
+;; r1 := r1 op r2
+(define (op-add r1 r2) (make-op-math + r1 r2))
+(define (op-sub r1 r2) (make-op-math - r1 r2))
+(define (op-mul r1 r2) (make-op-math * r1 r2))
+(define (op-div r1 r2) (make-op-math / r1 r2))
+
 ;; Macros:
 
 ;; Does nothing.
@@ -278,3 +299,21 @@
         (map (lambda (r)
                (mc-pop r sp))
              (reverse regs))))
+
+;; Function calling
+;; FIXME Loose these in favour of CPS.
+(define (mc-ret)
+  (list (mc-pop c sp)
+        (op-swap c pc)))
+
+(define (mc-call label)
+  (let ((prep (flatten (list (mc-push sp c)
+                             (op-jmp label)))))
+    (list (op-set c (length prep))
+          (op-add c pc)
+          prep)))
+
+(define (mc-define name . body)
+  (list name
+        body
+        (mc-ret)))

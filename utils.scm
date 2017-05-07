@@ -16,11 +16,6 @@
   (debug tag state)
   state)
 
-(define (break tag)
-  (lambda (labels)
-    (lambda (state)
-      (trace tag state))))
-
 (define (atom? a)
   (or (symbol? a) (number? a)))
 
