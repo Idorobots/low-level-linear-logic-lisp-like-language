@@ -407,19 +407,18 @@
            ;; Save state.
            (mc-push sp t1)
            ;; Check proper list condition.
-           (op-atom? r2)
-           (op-not c)
-           (op-swap c t1)
-           (op-nil? r2)
-           (op-or t1 c)
-           (op-jmp-if-nil ':raise-error)
-           ;; Actually cons the value.
-           (op-swap r3 r2)
-           (mc-push r3 r1)
-           (op-jmp ':end)
-           ':raise-error
-           (op-set c 'fn-cons-error)
-           ':end
+           (mc-if (list
+                   (op-atom? r2)
+                   (op-not c)
+                   (op-swap c t1)
+                   (op-nil? r2)
+                   (op-or t1 c))
+                  ;; Actually cons the value.
+                  (list
+                   (op-swap r3 r2)
+                   (mc-push r3 r1))
+                  ;; Rise error otherwise.
+                  (op-set c 'fn-cons-error))
            ;; Restore state.
            (mc-pop t1 sp)))))
 
