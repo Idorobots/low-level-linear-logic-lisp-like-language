@@ -62,46 +62,45 @@
            (mc-push sp t1)
            (mc-push sp t2)
            ;; Check the condition.
-           (op-atom? r1)
-           (op-swap c t1)
-           (op-atom? r2)
-           (op-swap c t2)
-           (op-and t1 t2)
-           (op-jmp-if-not-nil ':both-atoms)
-           (op-not t1)
-           (op-swap c t1)
-           (op-not t2)
-           (op-swap c t2)
-           (op-and t1 t2)
-           (op-jmp-if-not-nil ':both-non-atoms)
-           ;; An atom & non-atom.
-           (op-set r3 'nil)
-           (op-jmp ':end)
-           ':both-non-atoms
-           ;; Save some more state.
-           (mc-push sp t3)
-           ;; Compute (car r1) & (car r2).
-           (mc-pop t1 r1)
-           (mc-pop t2 r2)
-           (fn-equal? r1 r2 r3)
-           (op-swap t1 r1)
-           (op-swap t2 r2)
-           (op-swap t3 r3) ;; Result of (equal? (cdr r1) (cdr r2)) is in t3.
-           (fn-equal? r1 r2 r3) ;; Result of (equal? (car r1) (car r2)) is in r3.
-           (op-swap t1 r1)
-           (op-swap t2 r2)
-           (op-and t3 r3)
-           (op-swap c r3) ;; Result of (and t3 r3) lands in r3.
-           ;; Restore arguments.
-           (mc-push r1 t1)
-           (mc-push r2 t2)
-           ;; Restore some more state.
-           (mc-pop t3 sp)
-           (op-jmp ':end)
-           ':both-atoms
-           (op-eq? r1 r2)
-           (op-swap c r3)
-           ':end
+           (mc-if (list
+                   (op-atom? r1)
+                   (op-swap c t1)
+                   (op-atom? r2)
+                   (op-swap c t2)
+                   (op-and t1 t2))
+                  ;; Both atoms.
+                  (list
+                   (op-eq? r1 r2)
+                   (op-swap c r3))
+                  (mc-if (list
+                          (op-not t1)
+                          (op-swap c t1)
+                          (op-not t2)
+                          (op-swap c t2)
+                          (op-and t1 t2))
+                         ;; Both non-atoms.
+                         (list
+                          ;; Save some more state.
+                          (mc-push sp t3)
+                          ;; Compute (car r1) & (car r2).
+                          (mc-pop t1 r1)
+                          (mc-pop t2 r2)
+                          (fn-equal? r1 r2 r3)
+                          (op-swap t1 r1)
+                          (op-swap t2 r2)
+                          (op-swap t3 r3) ;; Result of (equal? (cdr r1) (cdr r2)) is in t3.
+                          (fn-equal? r1 r2 r3) ;; Result of (equal? (car r1) (car r2)) is in r3.
+                          (op-swap t1 r1)
+                          (op-swap t2 r2)
+                          (op-and t3 r3)
+                          (op-swap c r3) ;; Result of (and t3 r3) lands in r3.
+                          ;; Restore arguments.
+                          (mc-push r1 t1)
+                          (mc-push r2 t2)
+                          ;; Restore some more state.
+                          (mc-pop t3 sp))
+                         ;; An atom & non-atom.
+                         (op-set r3 'nil)))
            ;; Restore state.
            (mc-pop t2 sp)
            (mc-pop t1 sp)))))
