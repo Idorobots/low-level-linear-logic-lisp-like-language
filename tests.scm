@@ -129,15 +129,30 @@
 (-->
  (test 'functions (init-state 5)
        (op-set r1 23)
-       (mc-call ':rand)
-       (op-set r2 23)
+       (op-set r2 5)
+       (mc-call ':id r1 r2)
+       (op-set r3 23)
        (op-halt)
-       (mc-define ':rand
+       (mc-define ':id ; r1 -> r2
+                  (break 1)
+                  (op-assign r2 r1)
+                  (break 2)))
+ (reg-assert r1 23)
+ (reg-assert r2 23)
+ (reg-assert r3 23))
+
+(-->
+ (test 'call-reordered (init-state 5)
+       (op-set r1 23)
+       (op-set r2 13)
+       (mc-call ':rand r2)
+       (op-halt)
+       (mc-define ':rand ; () -> r1
                   (break 1)
                   (op-set r1 5)
                   (break 2)))
- (reg-assert r1 5)
- (reg-assert r2 23))
+ (reg-assert r1 23)
+ (reg-assert r2 5))
 
 (-->
  (test 'basic-cons (init-state 5)
