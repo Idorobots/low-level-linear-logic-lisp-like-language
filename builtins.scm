@@ -8,9 +8,7 @@
     (lambda (state)
       (run 'fn-free state
            ;; Check condition.
-           (mc-when (list
-                     (op-nil? r1)
-                     (op-not c))
+           (mc-when (mc-not (op-nil? r1))
                     ;; Check what to do.
                     (mc-if (op-atom? r1)
                            (op-set r1 'nil)
@@ -48,26 +46,20 @@
   (lambda (labels)
     (lambda (state)
       (run 'fn-equal? state
-           (mc-spill (list t1 t2)
+           (mc-spill (list t1)
                      ;; Check the condition.
-                     (mc-if (list
-                             (op-atom? r1)
-                             (op-swap c t1)
-                             (op-atom? r2)
-                             (op-swap c t2)
-                             (op-and t1 t2))
+                     (mc-if (mc-and t1
+                                    (op-atom? r1)
+                                    (op-atom? r2))
                             ;; Both atoms.
                             (list
                              (op-eq? r1 r2)
                              (op-swap c r3))
-                            (mc-if (list
-                                    (op-not t1)
-                                    (op-swap c t1)
-                                    (op-not t2)
-                                    (op-swap c t2)
-                                    (op-and t1 t2))
+                            (mc-if (mc-and t1
+                                           (op-not t1)
+                                           (mc-not (op-atom? r2)))
                                    ;; Both non-atoms.
-                                   (mc-spill (list t3)
+                                   (mc-spill (list t2 t3)
                                              ;; Compute (car r1) & (car r2).
                                              (mc-pop t1 r1)
                                              (mc-pop t2 r2)
@@ -76,11 +68,11 @@
                                              (op-swap t2 r2)
                                              (op-swap t3 r3) ;; Result of (equal? (cdr r1) (cdr r2)) is in t3.
                                              (fn-equal? r1 r2 r3) ;; Result of (equal? (car r1) (car r2)) is in r3.
-                                             (op-swap t1 r1)
-                                             (op-swap t2 r2)
                                              (op-and t3 r3)
                                              (op-swap c r3) ;; Result of (and t3 r3) lands in r3.
                                              ;; Restore arguments.
+                                             (op-swap t1 r1)
+                                             (op-swap t2 r2)
                                              (mc-push r1 t1)
                                              (mc-push r2 t2))
                                    ;; An atom & non-atom.
@@ -92,12 +84,9 @@
       (run 'fn-cons state
            (mc-spill (list t1)
                      ;; Check proper list condition.
-                     (mc-if (list
-                             (op-atom? r2)
-                             (op-not c)
-                             (op-swap c t1)
-                             (op-nil? r2)
-                             (op-or t1 c))
+                     (mc-if (mc-or t1
+                                   (mc-not (op-atom? r2))
+                                   (op-nil? r2))
                             ;; Actually cons the value.
                             (list
                              (op-swap r3 r2)

@@ -51,6 +51,18 @@
  (reg-assert r3 'nil))
 
 (-->
+ (test 'conditionals (init-state 5)
+       (op-set r1 'foo)
+       (op-set r2 'bar)
+       (op-set r3 'bar)
+       (mc-and t1
+               (mc-not (op-eq? r1 r2))
+               (mc-or t2
+                      (op-eq? r1 r3)
+                      (op-eq? r2 r3))))
+ (reg-assert c 'true))
+
+(-->
  (test 'basic-if (init-state 1)
        (op-set r1 'true)
        (mc-if (op-nil? r1)
@@ -141,6 +153,8 @@
        (op-set r1 1)
        (op-set r2 1)
        (fn-equal? r1 r2 r3))
+ (reg-assert r1 1)
+ (reg-assert r2 1)
  (reg-assert r3 'true))
 
 (-->
@@ -148,6 +162,8 @@
        (op-set r1 1)
        (op-set r2 2)
        (fn-equal? r1 r2 r3))
+ (reg-assert r1 1)
+ (reg-assert r2 2)
  (reg-assert r3 'nil))
 
 (-->
@@ -155,6 +171,8 @@
                          (reg-set r1 '(2 1 . nil))
                          (reg-set r2 '(2 1 . nil)))
        (fn-equal? r1 r2 r3))
+ (reg-assert r1 '(2 1 . nil))
+ (reg-assert r2 '(2 1 . nil))
  (reg-assert r3 'true))
 
 (-->
@@ -162,6 +180,8 @@
                                    (reg-set r1 '(1 1 . nil))
                                    (reg-set r2 '(2 2 . nil)))
        (fn-equal? r1 r2 r3))
+ (reg-assert r1 '(1 1 . nil))
+ (reg-assert r2 '(2 2 . nil))
  (reg-assert r3 'nil))
 
 (-->
@@ -169,6 +189,8 @@
                                     (reg-set r1 '(2 1 . nil))
                                     (reg-set r2 1))
        (fn-equal? r1 r2 r3))
+ (reg-assert r1 '(2 1 . nil))
+ (reg-assert r2 1)
  (reg-assert r3 'nil))
 
 (-->

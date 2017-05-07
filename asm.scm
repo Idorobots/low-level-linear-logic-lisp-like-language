@@ -253,6 +253,22 @@
          body
          (mc-noop)))
 
+(define (mc-not expr)
+  (list expr
+        (op-not c)))
+
+(define (mc-and tmp expr-a expr-b)
+  (list expr-a
+        (op-swap c tmp)
+        expr-b
+        (op-and c tmp)))
+
+(define (mc-or tmp expr-a expr-b)
+  (list expr-a
+        (op-swap c tmp)
+        expr-b
+        (op-or c tmp)))
+
 ;; Register spilling
 (define (mc-spill regs . body)
   (list (map (lambda (r)
