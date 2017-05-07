@@ -263,6 +263,10 @@
 
 ;; Macros:
 
+;; Does nothing.
+(define (mc-noop)
+  (op-swap c c))
+
 ;; r1 := (cons r2 r1), r2 := nil
 (define (mc-push r1 r2)
   (list (op-swap-cdr r1 fr)
@@ -276,6 +280,7 @@
         (op-swap r2 fr)
         (op-swap-car r1 fr)))
 
+;; If conditional.
 (define (mc-if cond then else)
   (let ((:else-label (gen-label ':else))
         (:end-label (gen-label ':end)))
@@ -287,6 +292,11 @@
           else
           :end-label)))
 
+(define (mc-when cond . body)
+  (mc-if cond
+         body
+         (mc-noop)))
+
 ;; Functions (fn args ... result):
 
 (define (fn-free r1)
@@ -294,24 +304,22 @@
     (lambda (state)
       (run 'fn-free state
            ;; Check condition.
-           (op-nil? r1)
-           (op-jmp-if-not-nil ':end)
-           ;; Check what to do.
-           (op-atom? r1)
-           (op-jmp-if-nil ':not-atom)
-           (op-set r1 'nil)
-           (op-jmp ':end)
-           ':not-atom
-           ;; Save state.
-           (mc-push sp t1)
-           ;; Compute (cdr r1).
-           (mc-pop t1 r1)
-           (fn-free r1) ;; Free (cdr r1).
-           (op-swap t1 r1)
-           (fn-free r1) ;; Free (car r1).
-           ;; Restore state.
-           (mc-pop t1 sp)
-           ':end))))
+           (mc-when (list
+                     (op-nil? r1)
+                     (op-not c))
+                    ;; Check what to do.
+                    (mc-if (op-atom? r1)
+                           (op-set r1 'nil)
+                           (list
+                            ;; Save state.
+                            (mc-push sp t1)
+                            ;; Compute (cdr r1).
+                            (mc-pop t1 r1)
+                            (fn-free r1) ;; Free (cdr r1).
+                            (op-swap t1 r1)
+                            (fn-free r1) ;; Free (car r1).
+                            ;; Restore state.
+                            (mc-pop t1 sp))))))))
 
 (define (fn-copy r1 r2)
   (lambda (labels)
