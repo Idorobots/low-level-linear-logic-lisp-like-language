@@ -1,17 +1,11 @@
-;; Built-in functions
+;;; Built-in functions
+
+;; Args meaning:
+;; &r1 - borrowed reference in r1
+;; r1 - ownership to r1 taken
 
 (load "utils.scm")
 (load "asm.scm")
-
-;; Utils
-
-(define (fix-state fun) ;; FIXME This shouldn't be here...
-  (lambda (state)
-    (let ((saved-pc (reg state pc)))
-      (--> state
-           (reg-set pc 0)
-           fun
-           (reg-set pc saved-pc)))))
 
 ;; Actual functions (fn args ... result)
 
@@ -30,7 +24,7 @@
                                        (mc-call ':fn-free r1)))))) ;; Free (car r1).
 
 (define (fn-copy)
-  (mc-define ':fn-copy ; r1 -> r2
+  (mc-define ':fn-copy ; &r1 -> r2
              ;; Check condition.
              (mc-if (op-nil? r2)
                     ;; Check what to do.
@@ -51,7 +45,7 @@
                     (op-set c 'fn-copy-error))))
 
 (define (fn-equal?)
-  (mc-define ':fn-equal? ; (r1 r2) -> r3
+  (mc-define ':fn-equal? ; (&r1 &r2) -> r3
              (mc-spill (list t1)
                        ;; Check the condition.
                        (mc-if (mc-and t1
