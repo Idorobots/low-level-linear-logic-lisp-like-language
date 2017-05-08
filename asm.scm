@@ -21,7 +21,7 @@
         (if (and (number? r1)
                  (number? r2))
             (reg-set state r1 (op a b))
-            (reg-set state c 'op-math-error))))))
+            (error 'op-math-error))))))
 
 ;; State: (C R1 R2 SP FR)
 
@@ -184,7 +184,7 @@
       (if (and (atom? (reg state r))
                (atom? atom))
           (reg-set state r atom)
-          (reg-set state c 'op-set-error)))))
+          (error 'op-set-error)))))
 
 ;; r1 := r2
 (define (op-assign r1 r2)
@@ -194,7 +194,7 @@
         (if (and (atom? (reg state r1))
                  (atom? a))
             (reg-set state r1 a)
-            (reg-set state c 'op-assign-error))))))
+            (error 'op-assign-error))))))
 
 ;; tmp := r1, r1 := r2, r2 := tmp
 (define (op-swap r1 r2)
@@ -217,7 +217,7 @@
             (--> state
                  (reg-set r1 (car b))
                  (reg-set r2 (cons a (cdr b))))
-            (reg-set state c 'op-swap-car-error))))))
+            (error 'op-swap-car-error))))))
 
 ;; tmp := r1, r1 := (cdr r2), (cdr r2) := tmp
 (define (op-swap-cdr r1 r2)
@@ -230,7 +230,7 @@
             (--> state
                  (reg-set r1 (cdr b))
                  (reg-set r2 (cons (car b) a)))
-            (reg-set state c 'op-swap-cdr-error))))))
+            (error 'op-swap-cdr-error))))))
 
 ;; r1 := r1 op r2
 (define (op-add r1 r2) (make-op-math + r1 r2))

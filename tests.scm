@@ -23,6 +23,14 @@
 ;; Actual tests:
 
 (-->
+ (with-handlers ((identity (lambda (e)
+                             (init-state 1))))
+   (test 'errors (init-state 1)
+         (op-set c 'true)
+         (op-swap-car r1 r1)))
+ (reg-assert c 'init))
+
+(-->
  (test 'running (init-state 1)
        (op-assign t1 pc)
        (op-assign t2 pc))
