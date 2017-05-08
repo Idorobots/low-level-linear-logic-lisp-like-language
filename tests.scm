@@ -177,11 +177,13 @@
  (reg-assert r1 '(3 2 1 . nil)))
 
 (-->
- (test 'free (--> (init-state 5)
+ (test 'free (--> (init-state 10)
                   (reg-set r1 '(5 4 3 2 1 . nil)))
-       (fn-free r1))
+       (mc-call ':fn-free r1)
+       (op-halt)
+       (fn-free))
  (reg-assert r1 'nil)
- (reg-assert fr (make-cells 10)))
+ (reg-assert fr (make-cells 15)))
 
 (-->
  (test 'free-cons (init-state 10)
@@ -189,8 +191,9 @@
        (mc-call ':fn-cons r1 r2 r3)
        (op-set r1 2)
        (mc-call ':fn-cons r1 r3 r3)
-       (fn-free r3)
+       (mc-call ':fn-free r3)
        (op-halt)
+       (fn-free)
        (fn-cons))
  (reg-assert r3 'nil)
  (reg-assert fr (make-cells 10)))

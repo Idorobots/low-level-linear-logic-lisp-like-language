@@ -15,22 +15,19 @@
 
 ;; Actual functions (fn args ... result)
 
-(define (fn-free r1)
-  (lambda (labels)
-    (fix-state
-     (lambda (state)
-       (run 'fn-free (reg-set state pc 0)
-            ;; Check condition.
-            (mc-when (mc-not (op-nil? r1))
-                     ;; Check what to do.
-                     (mc-if (op-atom? r1)
-                            (op-set r1 'nil)
-                            (mc-spill (list t1)
-                                      ;; Compute (cdr r1).
-                                      (mc-pop t1 r1)
-                                      (fn-free r1) ;; Free (cdr r1).
-                                      (op-swap t1 r1)
-                                      (fn-free r1))))))))) ;; Free (car r1).
+(define (fn-free)
+  (mc-define ':fn-free ; r1 -> ()
+             ;; Check condition.
+             (mc-when (mc-not (op-nil? r1))
+                      ;; Check what to do.
+                      (mc-if (op-atom? r1)
+                             (op-set r1 'nil)
+                             (mc-spill (list t1)
+                                       ;; Compute (cdr r1).
+                                       (mc-pop t1 r1)
+                                       (mc-call ':fn-free r1) ;; Free (cdr r1).
+                                       (op-swap t1 r1)
+                                       (mc-call ':fn-free r1)))))) ;; Free (car r1).
 
 (define (fn-copy r1 r2)
   (lambda (labels)
