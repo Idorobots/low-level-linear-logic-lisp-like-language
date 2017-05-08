@@ -158,18 +158,23 @@
  (test 'basic-cons (init-state 5)
        (op-set r1 1)
        (op-set r2 'nil)
-       (fn-cons r1 r2 r3))
+       (mc-call ':fn-cons r1 r2 r3)
+       (op-halt)
+       (fn-cons))
  (reg-assert r3 '(1 . nil)))
 
 (-->
- (test 'cons (init-state 5)
+ (test 'cons (init-state 10)
        (op-set r1 1)
-       (fn-cons r1 r2 r3)
+       (op-set r2 'nil)
+       (mc-call ':fn-cons r1 r2 r3)
        (op-set r1 2)
-       (fn-cons r1 r3 r3)
-       (op-set r1 3)
-       (fn-cons r1 r3 r3))
- (reg-assert r3 '(3 2 1 . nil)))
+       (mc-call ':fn-cons r1 r3 r2)
+       (op-set r3 3)
+       (mc-call ':fn-cons r3 r2 r1)
+       (op-halt)
+       (fn-cons))
+ (reg-assert r1 '(3 2 1 . nil)))
 
 (-->
  (test 'free (--> (init-state 5)
@@ -179,14 +184,16 @@
  (reg-assert fr (make-cells 10)))
 
 (-->
- (test 'free-cons (init-state 5)
+ (test 'free-cons (init-state 10)
        (op-set r1 1)
-       (fn-cons r1 r2 r3)
+       (mc-call ':fn-cons r1 r2 r3)
        (op-set r1 2)
-       (fn-cons r1 r3 r3)
-       (fn-free r3))
+       (mc-call ':fn-cons r1 r3 r3)
+       (fn-free r3)
+       (op-halt)
+       (fn-cons))
  (reg-assert r3 'nil)
- (reg-assert fr (make-cells 5)))
+ (reg-assert fr (make-cells 10)))
 
 (-->
  (test 'basic-copy (--> (init-state 7)
@@ -197,15 +204,17 @@
  (reg-assert fr (make-cells 4)))
 
 (-->
- (test 'copy (init-state 7)
+ (test 'copy (init-state 10)
        (op-set r1 1)
-       (fn-cons r1 r2 r3)
+       (mc-call ':fn-cons r1 r2 r3)
        (op-set r1 2)
-       (fn-cons r1 r3 r3)
-       (fn-copy r3 r2))
+       (mc-call ':fn-cons r1 r3 r3)
+       (fn-copy r3 r2)
+       (op-halt)
+       (fn-cons))
  (reg-assert r2 '(2 1 . nil)) ;; 2 cells
  (reg-assert r3 '(2 1 . nil)) ;; 2 cells
- (reg-assert fr (make-cells 3)))
+ (reg-assert fr (make-cells 6)))
 
 (-->
  (test 'equal-atoms (init-state 10)
@@ -253,11 +262,11 @@
  (reg-assert r3 'nil))
 
 (-->
- (test 'equal-cons (init-state 10)
+ (test 'equal-cons (init-state 15)
        (op-set r1 1)
-       (fn-cons r1 r2 r3)
+       (mc-call ':fn-cons r1 r2 r3)
        (op-set r1 2)
-       (fn-cons r1 r3 r3)
+       (mc-call ':fn-cons r1 r3 r3)
        (fn-equal? r3 r2 r1)
        (op-swap r1 t1)
        (break 1)
@@ -266,10 +275,12 @@
        (op-swap r1 t2)
        (break 2)
        (op-set r1 3)
-       (fn-cons r1 r3 r3)
+       (mc-call ':fn-cons r1 r3 r3)
        (fn-equal? r3 r2 r1)
        (op-swap r1 t3)
-       (break 3))
+       (break 3)
+       (op-halt)
+       (fn-cons))
  (reg-assert t1 'nil)
  (reg-assert t2 'true)
  (reg-assert t3 'nil))

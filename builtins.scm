@@ -93,19 +93,16 @@
                                     ;; An atom & non-atom.
                                     (op-set r3 'nil)))))))))
 
-(define (fn-cons r1 r2 r3)
-  (lambda (labels)
-    (fix-state
-     (lambda (state)
-       (run 'fn-cons state
-            (mc-spill (list t1)
-                      ;; Check proper list condition.
-                      (mc-if (mc-or t1
-                                    (mc-not (op-atom? r2))
-                                    (op-nil? r2))
-                             ;; Actually cons the value.
-                             (list
-                              (op-swap r3 r2)
-                              (mc-push r3 r1))
-                             ;; Rise error otherwise.
-                             (op-set c 'fn-cons-error))))))))
+(define (fn-cons)
+  (mc-define ':fn-cons ; (r1 r2) -> r3
+             (mc-spill (list t1)
+                       ;; Check proper list condition.
+                       (mc-if (mc-or t1
+                                     (mc-not (op-atom? r2))
+                                     (op-nil? r2))
+                              ;; Actually cons the value.
+                              (list
+                               (op-swap r3 r2)
+                               (mc-push r3 r1))
+                              ;; Rise error otherwise.
+                              (op-set c 'fn-cons-error)))))
