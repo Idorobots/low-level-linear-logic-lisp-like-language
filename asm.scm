@@ -307,11 +307,6 @@
         (op-swap c pc)))
 
 (define (mc-call label . args)
-  (define (reorder regs tmps)
-    (map (lambda (r t)
-           (op-swap r t))
-         regs
-         tmps))
   (let* ((tmps (take (list t1 t2 t3) (length args)))
          (reordered (take (list r1 r2 r3) (length args)))
          (prep (flatten (list (mc-push sp c)
@@ -323,14 +318,14 @@
         call
         ;; Needs args reordering first...
         (mc-spill tmps
-              ;; Move actual args to temporaries.
-              (reorder args tmps)
-              ;; Move temporaries to their respective argument positions.
-              (reorder reordered tmps)
+              ;; Reorder the args to support proper calling convention.
+              (map op-swap args tmps)
+              (map op-swap reordered tmps)
               call
-              ;; Move the return value to the correct register
-              (op-swap (last reordered) (first tmps))
-              (op-swap (last args) (first tmps))))))
+              ;; Restore the arguments & return value ordering.
+              ;; NOTE Needs to restore all registers to support functions not taking ownership.
+              (map op-swap reordered tmps)
+              (map op-swap args tmps)))))
 
 (define (mc-define name . body)
   (list name

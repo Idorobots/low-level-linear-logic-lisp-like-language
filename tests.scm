@@ -199,25 +199,29 @@
  (reg-assert fr (make-cells 10)))
 
 (-->
- (test 'basic-copy (--> (init-state 7)
+ (test 'basic-copy (--> (init-state 10)
                         (reg-set r1 '(3 2 1 . nil)))
-       (fn-copy r1 r2))
+       (mc-call ':fn-copy r1 r2)
+       (op-halt)
+       (fn-copy))
  (reg-assert r1 '(3 2 1 . nil)) ;; 0 cells, supplied externally
  (reg-assert r2 '(3 2 1 . nil)) ;; 3 cells
- (reg-assert fr (make-cells 4)))
+ (reg-assert fr (make-cells 7)))
 
 (-->
- (test 'copy (init-state 10)
+ (test 'copy (init-state 15)
        (op-set r1 1)
        (mc-call ':fn-cons r1 r2 r3)
        (op-set r1 2)
        (mc-call ':fn-cons r1 r3 r3)
-       (fn-copy r3 r2)
+       (break 1)
+       (mc-call ':fn-copy r3 r2)
        (op-halt)
-       (fn-cons))
+       (fn-cons)
+       (fn-copy))
  (reg-assert r2 '(2 1 . nil)) ;; 2 cells
  (reg-assert r3 '(2 1 . nil)) ;; 2 cells
- (reg-assert fr (make-cells 6)))
+ (reg-assert fr (make-cells 11)))
 
 (-->
  (test 'equal-atoms (init-state 10)
@@ -273,7 +277,7 @@
        (fn-equal? r3 r2 r1)
        (op-swap r1 t1)
        (break 1)
-       (fn-copy r3 r2)
+       (mc-call ':fn-copy r3 r2)
        (fn-equal? r3 r2 r1)
        (op-swap r1 t2)
        (break 2)
@@ -283,7 +287,8 @@
        (op-swap r1 t3)
        (break 3)
        (op-halt)
-       (fn-cons))
+       (fn-cons)
+       (fn-copy))
  (reg-assert t1 'nil)
  (reg-assert t2 'true)
  (reg-assert t3 'nil))

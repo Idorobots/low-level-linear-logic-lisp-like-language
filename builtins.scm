@@ -29,29 +29,26 @@
                                        (op-swap t1 r1)
                                        (mc-call ':fn-free r1)))))) ;; Free (car r1).
 
-(define (fn-copy r1 r2)
-  (lambda (labels)
-    (fix-state
-     (lambda (state)
-       (run 'fn-copy state
-            ;; Check condition.
-            (mc-if (op-nil? r2)
-                   ;; Check what to do.
-                   (mc-if (op-atom? r1)
-                          (op-assign r2 r1)
-                          (mc-spill (list t1 t2)
-                                    ;; Compute the (cdr r1)
-                                    (mc-pop t1 r1)
-                                    (fn-copy r1 r2) ;; Copy (cdr r1).
-                                    (op-swap t1 r1)
-                                    (op-swap t2 r2) ;; Result is stored in r2.
-                                    (fn-copy r1 r2) ;; Copy (car r1).
-                                    (op-swap t1 r1)
-                                    (op-swap t2 r2)
-                                    ;; Restore the argument.
-                                    (mc-push r1 t1)
-                                    (mc-push r2 t2)))
-                   (op-set c 'fn-copy-error)))))))
+(define (fn-copy)
+  (mc-define ':fn-copy ; r1 -> r2
+             ;; Check condition.
+             (mc-if (op-nil? r2)
+                    ;; Check what to do.
+                    (mc-if (op-atom? r1)
+                           (op-assign r2 r1)
+                           (mc-spill (list t1 t2)
+                                     ;; Compute the (cdr r1)
+                                     (mc-pop t1 r1)
+                                     (mc-call ':fn-copy r1 r2) ;; Copy (cdr r1).
+                                     (op-swap t1 r1)
+                                     (op-swap t2 r2) ;; Result is stored in r2.
+                                     (mc-call ':fn-copy r1 r2) ;; Copy (car r1).
+                                     (op-swap t1 r1)
+                                     (op-swap t2 r2)
+                                     ;; Restore the argument.
+                                     (mc-push r1 t1)
+                                     (mc-push r2 t2)))
+                    (op-set c 'fn-copy-error))))
 
 (define (fn-equal? r1 r2 r3)
   (lambda (labels)
