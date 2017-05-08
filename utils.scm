@@ -25,7 +25,7 @@
 (define (label-offset labels label)
   (let ((off (assoc label labels)))
     (if (null? off)
-        :halt
+        (error (format "Nonexistent label ~s" label))
         (cdr off))))
 
 (define (tagged tag suffix)

@@ -64,7 +64,7 @@
   (define (label-index ops label)
     (let loop ((i 0)
                (remaining ops))
-      (cond ((null? remaining) :halt)
+      (cond ((null? remaining) (error (format "Nonexistant label ~s" label)))
             ((equal? label (car remaining)) i)
             ((symbol? (car remaining)) (loop i (cdr remaining)))
             (':else (loop (+ i 1) (cdr remaining))))))
