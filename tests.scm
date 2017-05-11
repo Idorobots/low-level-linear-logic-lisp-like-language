@@ -341,3 +341,17 @@
      (reg-assert t1 'nil)
      (reg-assert t2 'true)
      (reg-assert t3 'nil))
+
+(define-fn (t-car-cdr)
+  (mc-call ':fn-cdr r1 r2)
+  (mc-call ':fn-car r2 r1))
+
+(--> (init-state 10)
+     (reg-set r1 '(2 1 . nil))
+     (test ':t-car-cdr
+           (t-car-cdr)
+           (fn-free)
+           (fn-car)
+           (fn-cdr))
+     (reg-assert r1 1)
+     (reg-assert fr (make-cells 12)))

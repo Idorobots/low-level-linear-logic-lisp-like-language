@@ -96,3 +96,16 @@
                     (mc-push r3 r1))
                    ;; Rise error otherwise.
                    (op-set c 'fn-cons-error))))
+
+(define-fn (fn-car) ; r1 -> r2
+  (mc-if (mc-not (op-atom? r1))
+         (list (mc-pop r2 r1)
+               (mc-call ':fn-free r1))
+         (op-set c 'fn-car-error)))
+
+(define-fn (fn-cdr) ; r1 -> r2
+  (mc-if (mc-not (op-atom? r1))
+         (list (op-swap r1 r2)
+               (mc-pop r1 r2)
+               (mc-call ':fn-free r1))
+         (op-set c 'fn-car-error)))
