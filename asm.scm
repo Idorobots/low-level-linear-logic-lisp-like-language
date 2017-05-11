@@ -60,7 +60,7 @@
 
 ;; Assembly & running:
 
-(define (assemble tag code)
+(define (assemble tag startup code)
   (define (label-index ops label)
     (let loop ((i 0)
                (remaining ops))
@@ -68,10 +68,13 @@
             ((equal? label (car remaining)) i)
             ((symbol? (car remaining)) (loop i (cdr remaining)))
             (':else (loop (+ i 1) (cdr remaining))))))
-  (let* ((flat (flatten code))
-         (labels (map (lambda (label)
-                        (cons label (label-index flat label)))
-                      (filter symbol? flat)))
+  (let* ((flat (flatten (list (mc-call startup)
+                              (op-halt)
+                              code)))
+         (labels (cons (cons ':halt :halt)
+                       (map (lambda (label)
+                              (cons label (label-index flat label)))
+                            (filter symbol? flat))))
          (assembly (map (lambda (op)
                           (op labels))
                         (filter (lambda (x) (not (symbol? x))) flat))))
@@ -79,23 +82,21 @@
     (debug (tagged tag "-n-ops") (length assembly))
     assembly))
 
-(define (run tag state . code)
-  (define (do-run tag state ops)
+(define (run tag state startup code)
+  (define (do-run state ops)
     (define (inc-pc state)
       (reg-set state pc (+ 1 (reg state pc))))
     (let* ((curr-pc (reg state pc)))
       (if (equal? :halt curr-pc)
           state
-          (do-run tag
-                  (inc-pc ((list-ref ops curr-pc)
+          (do-run (inc-pc ((list-ref ops curr-pc)
                            (trace tag state)))
                   ops))))
   (trace (tagged tag "-result")
-         (do-run tag state
+         (do-run state
                  (assemble (tagged tag "-assembly")
-                           (append code
-                                   (list (op-halt)
-                                         ':halt))))))
+                           startup
+                           code))))
 
 ;; Opcodes (op dest src ...):
 

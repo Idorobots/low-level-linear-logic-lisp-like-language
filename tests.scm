@@ -18,9 +18,7 @@
   (display ":")
   (newline)
   (newline)
-  (apply run startup state (list* (mc-call startup)
-                                  (op-halt)
-                                  code)))
+  (run startup state startup code))
 
 ;; Actual tests:
 
