@@ -24,7 +24,7 @@
 
 (define (label-offset labels label)
   (let ((off (assoc label labels)))
-    (if (null? off)
+    (if (false? off)
         (error (format "Nonexistent label ~s" label))
         (cdr off))))
 
