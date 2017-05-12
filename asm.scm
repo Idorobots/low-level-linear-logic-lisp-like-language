@@ -7,7 +7,7 @@
 (define (break tag)
   (lambda (labels)
     (lambda (state)
-      (trace tag state))))
+      (trace state tag))))
 
 (define (set-pc-jmp state value)
   ;; Accomodates the pc increment when running.
@@ -98,22 +98,21 @@
                                 acc))))))
   (let* ((assembled (assemble startup code))
          (labels (car assembled))
-         (ops (cadr assembled)))
+         (ops (cadr assembled))
+         (op-labels (compute-labels labels ops)))
     (debug (tagged tag "-labels") labels)
     (debug (tagged tag "-n-ops") (length ops))
-    (trace (tagged tag "-result")
-           (let loop ((state state)
-                      (ops ops)
-                      (op-labels (compute-labels labels ops)))
-             (define (inc-pc state)
-               (reg-set state pc (+ 1 (reg state pc))))
-             (let ((curr-pc (reg state pc)))
-               (if (equal? :halt curr-pc)
-                   state
-                   (loop (inc-pc ((list-ref ops curr-pc)
-                                  (trace (list-ref op-labels curr-pc) state)))
-                         ops
-                         op-labels)))))))
+    (let loop ((state state))
+      (define (inc-pc state)
+        (reg-set state pc (+ 1 (reg state pc))))
+      (let ((curr-pc (reg state pc)))
+        (if (equal? :halt curr-pc)
+            (trace state (tagged tag "-result"))
+            (--> state
+                 (trace (list-ref op-labels curr-pc))
+                 ((list-ref ops curr-pc))
+                 (inc-pc)
+                 (loop)))))))
 
 ;; Opcodes (op dest src ...):
 

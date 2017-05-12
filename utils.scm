@@ -7,12 +7,9 @@
     ((--> expr clause clauses ...) (--> (clause expr) clauses ...))))
 
 (define (debug tag value)
-  (display tag)
-  (display ": ")
-  (display value)
-  (newline))
+  (display (format "~s: ~s~n" tag value)))
 
-(define (trace tag state)
+(define (trace state tag)
   (debug tag state)
   state)
 
