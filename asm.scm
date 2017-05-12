@@ -22,14 +22,14 @@
     (instruction
      `(,name ,r1 ,r2)
      (lambda (state)
-      (let ((a (reg state r1))
-            (b (reg state r2)))
-        (if (and (number? r1)
-                 (number? r2))
-            (reg-set state r1 (op a b))
-            (error 'op-math-error)))))))
+       (let ((a (reg state r1))
+             (b (reg state r2)))
+         (if (and (number? r1)
+                  (number? r2))
+             (reg-set state r1 (op a b))
+             (error 'op-math-error)))))))
 
-;; State: (C R1 R2 SP FR)
+;; State:
 
 (define :halt -1)
 
@@ -318,10 +318,10 @@
              (error 'op-swap-cdr-error)))))))
 
 ;; r1 := r1 op r2
-(define (op-add r1 r2) (make-op-math 'op-add + r1 r2))
-(define (op-sub r1 r2) (make-op-math 'op-sub - r1 r2))
-(define (op-mul r1 r2) (make-op-math 'op-mul * r1 r2))
-(define (op-div r1 r2) (make-op-math 'op-div / r1 r2))
+(define (op-add r1 r2) (make-op-math 'add + r1 r2))
+(define (op-sub r1 r2) (make-op-math 'sub - r1 r2))
+(define (op-mul r1 r2) (make-op-math 'mul * r1 r2))
+(define (op-div r1 r2) (make-op-math 'div / r1 r2))
 
 ;; Macros:
 
@@ -403,14 +403,14 @@
         call
         ;; Needs args reordering first...
         (mc-spill tmps
-              ;; Reorder the args to support proper calling convention.
-              (map op-swap args tmps)
-              (map op-swap reordered tmps)
-              call
-              ;; Restore the arguments & return value ordering.
-              ;; NOTE Needs to restore all registers to support functions not taking ownership.
-              (map op-swap reordered tmps)
-              (map op-swap args tmps)))))
+                  ;; Reorder the args to support proper calling convention.
+                  (map op-swap args tmps)
+                  (map op-swap reordered tmps)
+                  call
+                  ;; Restore the arguments & return value ordering.
+                  ;; NOTE Needs to restore all registers to support functions not taking ownership.
+                  (map op-swap reordered tmps)
+                  (map op-swap args tmps)))))
 
 (define (mc-define name . body)
   (list name
