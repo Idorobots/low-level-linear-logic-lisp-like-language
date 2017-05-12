@@ -40,3 +40,8 @@
   (if (equal? n 1)
       'nil
       (cons 'nil (make-cells (- n 1)))))
+
+(define (repeat thing n)
+  (if (<= n 0)
+      '()
+      (cons thing (repeat thing (- n 1)))))

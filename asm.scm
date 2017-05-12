@@ -60,7 +60,7 @@
 
 ;; Assembly & running:
 
-(define (assemble tag startup code)
+(define (assemble startup code)
   (define (label-index ops label)
     (let loop ((i 0)
                (remaining ops))
@@ -68,7 +68,8 @@
             ((equal? label (car remaining)) i)
             ((symbol? (car remaining)) (loop i (cdr remaining)))
             (':else (loop (+ i 1) (cdr remaining))))))
-  (let* ((flat (flatten (list (mc-call startup)
+  (let* ((flat (flatten (list ':init
+                              (mc-call startup)
                               (op-halt)
                               code)))
          (labels (cons (cons ':halt :halt)
@@ -78,25 +79,41 @@
          (assembly (map (lambda (op)
                           (op labels))
                         (filter (lambda (x) (not (symbol? x))) flat))))
-    (debug (tagged tag "-labels") labels)
-    (debug (tagged tag "-n-ops") (length assembly))
-    assembly))
+    (list labels assembly)))
 
 (define (run tag state startup code)
-  (define (do-run state ops)
-    (define (inc-pc state)
-      (reg-set state pc (+ 1 (reg state pc))))
-    (let* ((curr-pc (reg state pc)))
-      (if (equal? :halt curr-pc)
-          state
-          (do-run (inc-pc ((list-ref ops curr-pc)
-                           (trace tag state)))
-                  ops))))
-  (trace (tagged tag "-result")
-         (do-run state
-                 (assemble (tagged tag "-assembly")
-                           startup
-                           code))))
+  (define (make-tag base offset)
+    (if (<= offset 0)
+        base
+        (tagged base (format "+~s" offset))))
+  (define (compute-labels labels ops)
+    (let loop ((ls (reverse labels))
+               (offset (- (length ops) 1))
+               (acc '()))
+      (cond ((< offset 0) acc)
+            ((< offset (cdar ls)) (loop (cdr ls) offset acc))
+            (':else (loop ls
+                          (- offset 1)
+                          (cons (make-tag (caar ls) (- offset (cdar ls)))
+                                acc))))))
+  (let* ((assembled (assemble startup code))
+         (labels (car assembled))
+         (ops (cadr assembled)))
+    (debug (tagged tag "-labels") labels)
+    (debug (tagged tag "-n-ops") (length ops))
+    (trace (tagged tag "-result")
+           (let loop ((state state)
+                      (ops ops)
+                      (op-labels (compute-labels labels ops)))
+             (define (inc-pc state)
+               (reg-set state pc (+ 1 (reg state pc))))
+             (let ((curr-pc (reg state pc)))
+               (if (equal? :halt curr-pc)
+                   state
+                   (loop (inc-pc ((list-ref ops curr-pc)
+                                  (trace (list-ref op-labels curr-pc) state)))
+                         ops
+                         op-labels)))))))
 
 ;; Opcodes (op dest src ...):
 
