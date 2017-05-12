@@ -39,3 +39,8 @@
   (if (<= n 0)
       '()
       (cons thing (repeat thing (- n 1)))))
+
+(define (right-pad str n ch)
+  (if (<= n (string-length str))
+      str
+      (string-append (right-pad str (- n (string-length ch)) ch) ch)))

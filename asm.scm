@@ -55,6 +55,16 @@
          'nil                 ;; Stack pointer.
          (make-cells cells))) ;; Free list.
 
+(define (state-format state)
+  (define (n-cells cells)
+    (if (pair? cells)
+        (+ 1 (n-cells (cdr cells)))
+        0))
+  (apply format
+         "pc=~s, c=~s, r1=~s, r2=~s, r3=~s, t1=~s, t2=~s, t3=~s, sp=~s, fr: ~s cells"
+         (append (take state 9)
+                 (--> state last n-cells list))))
+
 (define (reg state r)
   (list-ref state r))
 
@@ -121,10 +131,14 @@
       (define (inc-pc state)
         (reg-set state pc (+ 1 (reg state pc))))
       (define (trace state pc)
-        (display (format "~s\t~s\t~s~n"
-                         (list-ref op-labels pc)
-                         (list-ref disasm pc)
-                         state))
+        (define (print i)
+          (--> (format "~a " i)
+               (right-pad 20 " ")
+               (display)))
+        (print (list-ref op-labels pc))
+        (print (list-ref disasm pc))
+        (print (state-format state))
+        (newline)
         state)
       (let ((curr-pc (reg state pc)))
         (if (equal? :halt curr-pc)
