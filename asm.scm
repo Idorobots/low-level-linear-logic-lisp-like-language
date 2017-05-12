@@ -2,26 +2,32 @@
 
 (load "utils.scm")
 
-;; Utils
+;; Instructions
+
+(define (instruction repr exec)
+  (list repr exec))
+
+(define instruction-repr car)
+(define instruction-exec cadr)
 
 (define (break tag)
   (lambda (labels)
-    (lambda (state)
-      (trace state tag))))
+    (instruction
+     `(break ,tag)
+     (lambda (state)
+       (debug tag state)))))
 
-(define (set-pc-jmp state value)
-  ;; Accomodates the pc increment when running.
-  (reg-set state pc (- value 1)))
-
-(define (make-op-math op r1 r2)
+(define (make-op-math name op r1 r2)
   (lambda (labels)
-    (lambda (state)
+    (instruction
+     `(,name ,r1 ,r2)
+     (lambda (state)
       (let ((a (reg state r1))
             (b (reg state r2)))
         (if (and (number? r1)
                  (number? r2))
             (reg-set state r1 (op a b))
-            (error 'op-math-error))))))
+            (error 'op-math-error)))))))
 
 ;; State: (C R1 R2 SP FR)
 
@@ -58,6 +64,10 @@
       (cons (car state)
             (reg-set (cdr state) (- r 1) value))))
 
+(define (set-pc-jmp state value)
+  ;; Accomodates the pc increment when running.
+  (reg-set state pc (- value 1)))
+
 ;; Assembly & running:
 
 (define (assemble startup code)
@@ -78,8 +88,12 @@
                             (filter symbol? flat))))
          (assembly (map (lambda (op)
                           (op labels))
-                        (filter (lambda (x) (not (symbol? x))) flat))))
-    (list labels assembly)))
+                        (filter (lambda (x)
+                                  (not (symbol? x)))
+                                flat))))
+    (list labels
+          (map instruction-repr assembly)
+          (map instruction-exec assembly))))
 
 (define (run tag state startup code)
   (define (make-tag base offset)
@@ -98,18 +112,25 @@
                                 acc))))))
   (let* ((assembled (assemble startup code))
          (labels (car assembled))
-         (ops (cadr assembled))
+         (disasm (cadr assembled))
+         (ops (caddr assembled))
          (op-labels (compute-labels labels ops)))
     (debug (tagged tag "-labels") labels)
     (debug (tagged tag "-n-ops") (length ops))
     (let loop ((state state))
       (define (inc-pc state)
         (reg-set state pc (+ 1 (reg state pc))))
+      (define (trace state pc)
+        (display (format "~s\t~s\t~s~n"
+                         (list-ref op-labels pc)
+                         (list-ref disasm pc)
+                         state))
+        state)
       (let ((curr-pc (reg state pc)))
         (if (equal? :halt curr-pc)
-            (trace state (tagged tag "-result"))
+            (debug (tagged tag "-result") state)
             (--> state
-                 (trace (list-ref op-labels curr-pc))
+                 (trace curr-pc)
                  ((list-ref ops curr-pc))
                  (inc-pc)
                  (loop)))))))
@@ -119,144 +140,174 @@
 ;; pc := (address-of :halt)
 (define (op-halt)
   (lambda (labels)
-    (lambda (state)
-      (set-pc-jmp state :halt))))
+    (instruction
+     '(halt)
+     (lambda (state)
+       (set-pc-jmp state :halt)))))
 
 ;; pc := (address-of label)
 (define (op-jmp label)
   (lambda (labels)
     (let ((off (label-offset labels label)))
-      (lambda (state)
-        (set-pc-jmp state off)))))
+      (instruction
+       `(jmp ,label)
+       (lambda (state)
+         (set-pc-jmp state off))))))
 
 ;; pc := (address-of label) if c is nil.
 (define (op-jmp-if-nil label)
   (lambda (labels)
     (let ((off (label-offset labels label)))
-      (lambda (state)
-        (if (nil? (reg state c))
-            (set-pc-jmp state off)
-            state)))))
+      (instruction
+       `(jmp-if-nil ,label)
+       (lambda (state)
+         (if (nil? (reg state c))
+             (set-pc-jmp state off)
+             state))))))
 
 ;; pc := (address-of label) if r is (not nil)
 (define (op-jmp-if-not-nil label)
   (lambda (labels)
     (let ((off (label-offset labels label)))
-      (lambda (state)
-        (if (not (nil? (reg state c)))
-            (set-pc-jmp state off)
-            state)))))
+      (instruction
+       `(jmp-if-not-nil ,label)
+       (lambda (state)
+         (if (not (nil? (reg state c)))
+             (set-pc-jmp state off)
+             state))))))
 
 ;; c := (nil? r)
 (define (op-nil? r)
   (lambda (labels)
-    (lambda (state)
-      (if (nil? (reg state r))
-          (reg-set state c 'true)
-          (reg-set state c 'nil)))))
+    (instruction
+     `(nil? ,r)
+     (lambda (state)
+       (if (nil? (reg state r))
+           (reg-set state c 'true)
+           (reg-set state c 'nil))))))
 
 ;; c := (atom? r)
 (define (op-atom? r)
   (lambda (labels)
-    (lambda (state)
-      (if (atom? (reg state r))
-          (reg-set state c 'true)
-          (reg-set state c 'nil)))))
+    (instruction
+     `(atom? ,r)
+     (lambda (state)
+       (if (atom? (reg state r))
+           (reg-set state c 'true)
+           (reg-set state c 'nil))))))
 
 ;; c := (eq? r1 r2)
 (define (op-eq? r1 r2)
   (lambda (labels)
-    (lambda (state)
-      (if (eq? (reg state r1) (reg state r2))
-          (reg-set state c 'true)
-          (reg-set state c 'nil)))))
+    (instruction
+     `(eq? ,r1 ,r2)
+     (lambda (state)
+       (if (eq? (reg state r1) (reg state r2))
+           (reg-set state c 'true)
+           (reg-set state c 'nil))))))
 
 ;; c := (not r)
 (define (op-not r)
   (lambda (labels)
-    (lambda (state)
-      (if (nil? (reg state r))
-          (reg-set state c 'true)
-          (reg-set state c 'nil)))))
+    (instruction
+     `(not ,r)
+     (lambda (state)
+       (if (nil? (reg state r))
+           (reg-set state c 'true)
+           (reg-set state c 'nil))))))
 
 ;; c := (and r1 r2)
 (define (op-and r1 r2)
   (lambda (labels)
-    (lambda (state)
-      (if (and (not (nil? (reg state r1)))
-               (not (nil? (reg state r2))))
-          (reg-set state c 'true)
-          (reg-set state c 'nil)))))
+    (instruction
+     `(and ,r1 ,r2)
+     (lambda (state)
+       (if (and (not (nil? (reg state r1)))
+                (not (nil? (reg state r2))))
+           (reg-set state c 'true)
+           (reg-set state c 'nil))))))
 
 ;; c := (or r1 r2)
 (define (op-or r1 r2)
   (lambda (labels)
-    (lambda (state)
-      (if (or (not (nil? (reg state r1)))
-              (not (nil? (reg state r2))))
-          (reg-set state c 'true)
-          (reg-set state c 'nil)))))
+    (instruction
+     `(or ,r1 ,r2)
+     (lambda (state)
+       (if (or (not (nil? (reg state r1)))
+               (not (nil? (reg state r2))))
+           (reg-set state c 'true)
+           (reg-set state c 'nil))))))
 
 ;; r := atom
 (define (op-set r atom)
   (lambda (labels)
-    (lambda (state)
-      (if (and (atom? (reg state r))
-               (atom? atom))
-          (reg-set state r atom)
-          (error 'op-set-error)))))
+    (instruction
+     `(set ,r ,atom)
+     (lambda (state)
+       (if (and (atom? (reg state r))
+                (atom? atom))
+           (reg-set state r atom)
+           (error 'op-set-error))))))
 
 ;; r1 := r2
 (define (op-assign r1 r2)
   (lambda (labels)
-    (lambda (state)
-      (let ((a (reg state r2)))
-        (if (and (atom? (reg state r1))
-                 (atom? a))
-            (reg-set state r1 a)
-            (error 'op-assign-error))))))
+    (instruction
+     `(assign ,r1 ,r2)
+     (lambda (state)
+       (let ((a (reg state r2)))
+         (if (and (atom? (reg state r1))
+                  (atom? a))
+             (reg-set state r1 a)
+             (error 'op-assign-error)))))))
 
 ;; tmp := r1, r1 := r2, r2 := tmp
 (define (op-swap r1 r2)
   (lambda (labels)
-    (lambda (state)
-      (let ((a (reg state r1))
-            (b (reg state r2)))
-        (--> state
-             (reg-set r1 b)
-             (reg-set r2 a))))))
+    (instruction
+     `(swap ,r1 ,r2)
+     (lambda (state)
+       (let ((a (reg state r1))
+             (b (reg state r2)))
+         (--> state
+              (reg-set r1 b)
+              (reg-set r2 a)))))))
 
 ;; tmp := r1, r1 := (car r2), (car r2) := tmp
 (define (op-swap-car r1 r2)
   (lambda (labels)
-    (lambda (state)
-      (let ((a (reg state r1))
-            (b (reg state r2)))
-        (if (and (not (equal? r1 r2))
-                 (not (atom? b)))
-            (--> state
-                 (reg-set r1 (car b))
-                 (reg-set r2 (cons a (cdr b))))
-            (error 'op-swap-car-error))))))
+    (instruction
+     `(swap-car ,r1 ,r2)
+     (lambda (state)
+       (let ((a (reg state r1))
+             (b (reg state r2)))
+         (if (and (not (equal? r1 r2))
+                  (not (atom? b)))
+             (--> state
+                  (reg-set r1 (car b))
+                  (reg-set r2 (cons a (cdr b))))
+             (error 'op-swap-car-error)))))))
 
 ;; tmp := r1, r1 := (cdr r2), (cdr r2) := tmp
 (define (op-swap-cdr r1 r2)
   (lambda (labels)
-    (lambda (state)
-      (let ((a (reg state r1))
-            (b (reg state r2)))
-        (if (and (not (equal? r1 r2))
-                 (not (atom? b)))
-            (--> state
-                 (reg-set r1 (cdr b))
-                 (reg-set r2 (cons (car b) a)))
-            (error 'op-swap-cdr-error))))))
+    (instruction
+     `(swap-cdr ,r1 ,r2)
+     (lambda (state)
+       (let ((a (reg state r1))
+             (b (reg state r2)))
+         (if (and (not (equal? r1 r2))
+                  (not (atom? b)))
+             (--> state
+                  (reg-set r1 (cdr b))
+                  (reg-set r2 (cons (car b) a)))
+             (error 'op-swap-cdr-error)))))))
 
 ;; r1 := r1 op r2
-(define (op-add r1 r2) (make-op-math + r1 r2))
-(define (op-sub r1 r2) (make-op-math - r1 r2))
-(define (op-mul r1 r2) (make-op-math * r1 r2))
-(define (op-div r1 r2) (make-op-math / r1 r2))
+(define (op-add r1 r2) (make-op-math 'op-add + r1 r2))
+(define (op-sub r1 r2) (make-op-math 'op-sub - r1 r2))
+(define (op-mul r1 r2) (make-op-math 'op-mul * r1 r2))
+(define (op-div r1 r2) (make-op-math 'op-div / r1 r2))
 
 ;; Macros:
 

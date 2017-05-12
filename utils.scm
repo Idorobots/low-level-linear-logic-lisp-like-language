@@ -7,11 +7,8 @@
     ((--> expr clause clauses ...) (--> (clause expr) clauses ...))))
 
 (define (debug tag value)
-  (display (format "~s: ~s~n" tag value)))
-
-(define (trace state tag)
-  (debug tag state)
-  state)
+  (display (format "~s: ~s~n" tag value))
+  value)
 
 (define (atom? a)
   (or (symbol? a) (number? a)))
