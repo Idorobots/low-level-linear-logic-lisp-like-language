@@ -13,12 +13,9 @@
   (op-swap c c))
 
 ;; Jumps
-(define (mc-jmp-if-nil label)
-  (list (op-not c)
+(define (mc-br-if-nil label)
+  (list (op-nil? c)
         (op-br label)))
-
-(define (mc-jmp-if-not-nil label)
-  (op-br label))
 
 ;; r1 := (cons r2 r1), r2 := nil
 (define (mc-push r1 r2)

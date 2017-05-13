@@ -65,35 +65,35 @@
 
 ;; c := (nil? r)
 (define-op (op-nil? r) -> (labels) -> (state)
-  (if (nil? (reg state r))
-      (reg-set state c 'true)
-      (reg-set state c 'nil)))
+  (reg-set state c (if (nil? (reg state r))
+                       'true
+                       'nil)))
 
 ;; c := (atom? r)
 (define-op (op-atom? r) -> (labels) -> (state)
-  (if (atom? (reg state r))
-      (reg-set state c 'true)
-      (reg-set state c 'nil)))
+  (reg-set state c (if (atom? (reg state r))
+                       'true
+                       'nil)))
 
 ;; c := (eq? r1 r2)
 (define-op (op-eq? r1 r2) -> (labels) -> (state)
-  (if (eq? (reg state r1) (reg state r2))
-      (reg-set state c 'true)
-      (reg-set state c 'nil)))
+  (reg-set state c (if (eq? (reg state r1) (reg state r2))
+                       'true
+                       'nil)))
 
 ;; c := (and r1 r2)
 (define-op (op-and r1 r2) -> (labels) -> (state)
-  (if (and (not (nil? (reg state r1)))
-           (not (nil? (reg state r2))))
-      (reg-set state c 'true)
-      (reg-set state c 'nil)))
+  (reg-set state c (if (and (not (nil? (reg state r1)))
+                            (not (nil? (reg state r2))))
+                       'true
+                       'nil)))
 
 ;; c := (or r1 r2)
 (define-op (op-or r1 r2) -> (labels) -> (state)
-  (if (or (not (nil? (reg state r1)))
-          (not (nil? (reg state r2))))
-      (reg-set state c 'true)
-      (reg-set state c 'nil)))
+  (reg-set state c (if (or (not (nil? (reg state r1)))
+                           (not (nil? (reg state r2))))
+                       'true
+                       'nil)))
 
 ;; r := atom
 (define-op (op-set r atom) -> (labels) -> (state)

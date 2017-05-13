@@ -103,11 +103,11 @@
   ':set-r1-to-hello
   (op-set r1 'hello)
   (op-eq? r1 r2)
-  (mc-jmp-if-not-nil ':label)
+  (op-br ':label)
   ':start
   (op-set r2 'hello)
   (op-eq? r1 r2)
-  (mc-jmp-if-nil ':set-r1-to-hello)
+  (mc-br-if-nil ':set-r1-to-hello)
   (mc-halt)
   (op-set r3 'herp))
 
