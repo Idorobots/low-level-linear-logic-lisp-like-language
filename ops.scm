@@ -57,17 +57,11 @@
 (define-op (op-jmp label) -> (labels) -> (state)
   (set-pc-jmp state (label-offset labels label)))
 
-;; pc := (address-of label) if c is nil.
-(define-op (op-jmp-if-nil label) -> (labels) -> (state)
+;; pc := (address-of label) if (not (nil? c))
+(define-op (op-br label) -> (labels) -> (state)
   (if (nil? (reg state c))
-      (set-pc-jmp state (label-offset labels label))
-      state))
-
-;; pc := (address-of label) if r is (not nil)
-(define-op (op-jmp-if-not-nil label) -> (labels) -> (state)
-  (if (not (nil? (reg state c)))
-      (set-pc-jmp state (label-offset labels label))
-      state))
+      state
+      (set-pc-jmp state (label-offset labels label))))
 
 ;; c := (nil? r)
 (define-op (op-nil? r) -> (labels) -> (state)

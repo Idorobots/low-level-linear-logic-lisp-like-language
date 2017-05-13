@@ -12,6 +12,14 @@
 (define (mc-noop)
   (op-swap c c))
 
+;; Jumps
+(define (mc-jmp-if-nil label)
+  (list (op-not c)
+        (op-br label)))
+
+(define (mc-jmp-if-not-nil label)
+  (op-br label))
+
 ;; r1 := (cons r2 r1), r2 := nil
 (define (mc-push r1 r2)
   (list (op-swap-cdr r1 fr)
@@ -27,14 +35,14 @@
 
 ;; Conditionals
 (define (mc-if cond then else)
-  (let ((:else-label (gen-label ':else))
+  (let ((:then-label (gen-label ':then))
         (:end-label (gen-label ':end)))
     (list cond
-          (op-jmp-if-nil :else-label)
-          then
-          (op-jmp :end-label)
-          :else-label
+          (op-br :then-label)
           else
+          (op-jmp :end-label)
+          :then-label
+          then
           :end-label)))
 
 (define (mc-when cond . body)
