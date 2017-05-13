@@ -46,8 +46,8 @@
      (define-op (name r1 r2) -> (labels) -> (state)
        (let ((a (reg state r1))
              (b (reg state r2)))
-         (if (and (number? r1)
-                  (number? r2))
+         (if (and (number? a)
+                  (number? b))
              (reg-set state r1 (op a b))
              (error 'op-math-error)))))))
 
