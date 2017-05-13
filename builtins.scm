@@ -63,7 +63,7 @@
                     (op-eq? r1 r2)
                     (op-swap c r3))
                    (mc-if (mc-and t1
-                                  (op-not t1)
+                                  (op-nil? t1) ;; (not t1)
                                   (mc-not (op-atom? r2)))
                           ;; Both non-atoms.
                           (mc-spill (list t2 t3)

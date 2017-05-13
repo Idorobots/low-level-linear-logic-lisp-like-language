@@ -52,7 +52,7 @@
 
 (define (mc-not expr)
   (list expr
-        (op-not c)))
+        (op-nil? c)))
 
 (define (mc-and tmp expr-a expr-b)
   (list expr-a

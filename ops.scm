@@ -81,12 +81,6 @@
       (reg-set state c 'true)
       (reg-set state c 'nil)))
 
-;; c := (not r)
-(define-op (op-not r) -> (labels) -> (state)
-  (if (nil? (reg state r))
-      (reg-set state c 'true)
-      (reg-set state c 'nil)))
-
 ;; c := (and r1 r2)
 (define-op (op-and r1 r2) -> (labels) -> (state)
   (if (and (not (nil? (reg state r1)))
