@@ -5,7 +5,8 @@
 ;; r1 - ownership to r1 taken
 
 (load "utils.scm")
-(load "asm.scm")
+(load "ops.scm")
+(load "macros.scm")
 
 ;; Utils
 

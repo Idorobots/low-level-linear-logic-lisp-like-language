@@ -1,10 +1,19 @@
 ;; Tests
 
 (load "utils.scm")
-(load "asm.scm")
+(load "ops.scm")
+(load "macros.scm")
 (load "builtins.scm")
+(load "asm.scm")
 
 ;; Testing utils:
+
+(define (break tag)
+  (lambda (labels)
+    (instruction
+     `(break ,tag)
+     (lambda (state)
+       (debug tag state)))))
 
 (define (reg-assert state r value)
   (if (equal? (reg state r) value)
