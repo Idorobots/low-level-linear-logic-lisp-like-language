@@ -53,10 +53,6 @@
 
 ;; Opcodes (op dest src ...):
 
-;; pc := (address-of :halt)
-(define-op (op-halt) -> (labels) -> (state)
-  (set-pc-jmp state :halt))
-
 ;; pc := (address-of label)
 (define-op (op-jmp label) -> (labels) -> (state)
   (set-pc-jmp state (label-offset labels label)))

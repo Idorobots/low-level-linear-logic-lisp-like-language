@@ -108,7 +108,7 @@
   (op-set r2 'hello)
   (op-eq? r1 r2)
   (op-jmp-if-nil ':set-r1-to-hello)
-  (op-halt)
+  (mc-halt)
   (op-set r3 'herp))
 
 (--> (init-state 5)

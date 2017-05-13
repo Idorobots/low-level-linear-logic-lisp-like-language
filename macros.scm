@@ -3,6 +3,11 @@
 (load "utils.scm")
 (load "ops.scm")
 
+
+;; Halts the VM.
+(define (mc-halt)
+  (op-jmp ':halt))
+
 ;; Does nothing.
 (define (mc-noop)
   (op-swap c c))

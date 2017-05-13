@@ -17,7 +17,7 @@
             (':else (loop (+ i 1) (cdr remaining))))))
   (let* ((flat (flatten (list ':init
                               (mc-call startup)
-                              (op-halt)
+                              (mc-halt)
                               code)))
          (labels (cons (cons ':halt :halt)
                        (map (lambda (label)
