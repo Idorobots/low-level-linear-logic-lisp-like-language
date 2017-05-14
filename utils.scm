@@ -16,10 +16,13 @@
 (define (nil? a)
   (eq? a 'nil))
 
+(define (error-fmt fmt . args)
+  (error (apply format fmt args)))
+
 (define (label-offset labels label)
   (let ((off (assoc label labels)))
     (if (false? off)
-        (error (format "Nonexistent label ~s" label))
+        (error-fmt "Nonexistent label ~s" label)
         (cdr off))))
 
 (define (tagged tag suffix)

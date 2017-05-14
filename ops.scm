@@ -13,10 +13,21 @@
 
 (define-syntax define-op
   (syntax-rules (->)
-    ((define-op (name args ...) -> (asm-args ...) -> (exec-args ...)
-       body ...)
+    ((define-op (name args ...) -> rest ...)
+     (define-op (name args ...) 'ok -> rest ...))
+    ((define-op (name args ...) -> (asm-args ...) -> rest ...)
+     (define-op (name args ...) 'ok -> (asm-args ...) 'ok -> rest ...))
+    ((define-op (name args ...) -> (asm-args ...) asm-setup -> rest ...)
+     (define-op (name args ...) 'ok -> (asm-args ...) asm-setup -> rest ...))
+    ((define-op (name args ...) validation -> (asm-args ...) -> rest ...)
+     (define-op (name args ...) validation -> (asm-args ...) 'ok -> rest ...))
+    ((define-op (name args ...) validation
+       -> (asm-args ...) asm-setup
+       -> (exec-args ...) body ...)
      (define (name args ...)
+       validation
        (lambda (asm-args ...)
+         asm-setup
          (instruction `(name ,(arg-repr args asm-args ...) ...)
                       (lambda (exec-args ...)
                         body ...)))))))
@@ -54,14 +65,28 @@
 ;; Opcodes (op dest src ...):
 
 ;; pc := (address-of label)
-(define-op (op-jmp label) -> (labels) -> (state)
-  (set-pc-jmp state (label-offset labels label)))
+(define-op (op-jmp label)
+  (unless (symbol? label)
+    (error-fmt "Invalid op-jmp label ~s" label))
+
+  -> (labels)
+  (define off (label-offset labels label))
+
+  -> (state)
+  (set-pc-jmp state off))
 
 ;; pc := (address-of label) if (not (nil? c))
-(define-op (op-br label) -> (labels) -> (state)
+(define-op (op-br label)
+  (unless (symbol? label)
+    (error-fmt "Invalid op-br label ~s" label))
+
+  -> (labels)
+  (define off (label-offset labels label))
+
+  -> (state)
   (if (nil? (reg state c))
       state
-      (set-pc-jmp state (label-offset labels label))))
+      (set-pc-jmp state off)))
 
 ;; c := (nil? r)
 (define-op (op-nil? r) -> (labels) -> (state)
@@ -96,7 +121,12 @@
                        'nil)))
 
 ;; r := atom
-(define-op (op-set r atom) -> (labels) -> (state)
+(define-op (op-set r atom)
+  (unless (atom? atom)
+    (error-fmt "Invalid op-set argument ~s" atom))
+
+  -> (labels)
+  -> (state)
   (if (and (atom? (reg state r))
            (atom? atom))
       (reg-set state r atom)
@@ -119,22 +149,30 @@
          (reg-set r2 a))))
 
 ;; tmp := r1, r1 := (car r2), (car r2) := tmp
-(define-op (op-swap-car r1 r2) -> (labels) -> (state)
+(define-op (op-swap-car r1 r2)
+  (when (equal? r1 r2)
+    (error-fmt "op-swap-car arguments must be different, given ~s" r1))
+
+  -> (labels)
+  -> (state)
   (let ((a (reg state r1))
         (b (reg state r2)))
-    (if (and (not (equal? r1 r2))
-             (not (atom? b)))
+    (if (not (atom? b))
         (--> state
              (reg-set r1 (car b))
              (reg-set r2 (cons a (cdr b))))
         (error 'op-swap-car-error))))
 
 ;; tmp := r1, r1 := (cdr r2), (cdr r2) := tmp
-(define-op (op-swap-cdr r1 r2) -> (labels) -> (state)
+(define-op (op-swap-cdr r1 r2)
+  (when (equal? r1 r2)
+    (error-fmt "op-swap-cdr arguments must be different, given ~s" r1))
+
+-> (labels)
+-> (state)
   (let ((a (reg state r1))
         (b (reg state r2)))
-    (if (and (not (equal? r1 r2))
-             (not (atom? b)))
+    (if (not (atom? b))
         (--> state
              (reg-set r1 (cdr b))
              (reg-set r2 (cons (car b) a)))
