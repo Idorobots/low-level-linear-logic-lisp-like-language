@@ -155,12 +155,11 @@
 
   -> (labels)
   -> (state)
-  (let ((a (reg state r1))
-        (b (reg state r2)))
+  (let ((b (reg state r2)))
     (if (not (atom? b))
         (--> state
              (reg-set r1 (car b))
-             (reg-set r2 (cons a (cdr b))))
+             (reg-set r2 (cons (reg state r1) (cdr b))))
         (error 'op-swap-car-error))))
 
 ;; tmp := r1, r1 := (cdr r2), (cdr r2) := tmp
@@ -170,12 +169,11 @@
 
 -> (labels)
 -> (state)
-  (let ((a (reg state r1))
-        (b (reg state r2)))
+  (let ((b (reg state r2)))
     (if (not (atom? b))
         (--> state
              (reg-set r1 (cdr b))
-             (reg-set r2 (cons (car b) a)))
+             (reg-set r2 (cons (car b) (reg state r1))))
         (error 'op-swap-cdr-error))))
 
 ;; r1 := r1 op r2

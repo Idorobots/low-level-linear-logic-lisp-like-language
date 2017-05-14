@@ -28,9 +28,7 @@
                         (filter (lambda (x)
                                   (not (symbol? x)))
                                 flat))))
-    (list labels
-          (map instruction-repr assembly)
-          (map instruction-exec assembly))))
+    (list labels assembly)))
 
 ;; Execution
 
@@ -51,8 +49,7 @@
                                 acc))))))
   (let* ((assembled (assemble startup code))
          (labels (car assembled))
-         (disasm (cadr assembled))
-         (ops (caddr assembled))
+         (ops (cadr assembled))
          (op-labels (compute-labels labels ops)))
     (debug (tagged tag "-labels") labels)
     (debug (tagged tag "-n-ops") (length ops))
@@ -65,7 +62,7 @@
                (right-pad 20 " ")
                (display)))
         (print (list-ref op-labels pc))
-        (print (list-ref disasm pc))
+        (print (instruction-repr (list-ref ops pc)))
         (print (state-format state))
         (newline)
         state)
@@ -74,6 +71,6 @@
             (debug (tagged tag "-result") state)
             (--> state
                  (trace curr-pc)
-                 ((list-ref ops curr-pc))
+                 ((instruction-exec (list-ref ops curr-pc)))
                  (inc-pc)
                  (loop)))))))
