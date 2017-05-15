@@ -1,5 +1,9 @@
 ;; Utils
 
+#lang racket
+
+(provide (all-defined-out))
+
 (define-syntax -->
   (syntax-rules ()
     ((--> expr) expr)

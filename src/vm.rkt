@@ -1,6 +1,10 @@
 ;; VM & runtime state
 
-(load "utils.scm")
+#lang racket
+
+(provide (all-defined-out))
+
+(require "utils.rkt")
 
 (define :halt -1)
 

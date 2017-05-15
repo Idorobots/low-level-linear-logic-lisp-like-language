@@ -1,9 +1,13 @@
 ;;; Linear-typed Lisp assembler
 
-(load "utils.scm")
-(load "vm.scm")
-(load "ops.scm")
-(load "macros.scm")
+#lang racket
+
+(provide (all-defined-out))
+
+(require "utils.rkt")
+(require "vm.rkt")
+(require "ops.rkt")
+(require "macros.rkt")
 
 ;; Assembly
 

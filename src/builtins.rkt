@@ -1,12 +1,17 @@
 ;;; Built-in functions
 
+#lang racket
+
+(provide (all-defined-out))
+
 ;; Args meaning:
 ;; &r1 - borrowed reference in r1
 ;; r1 - ownership to r1 taken
 
-(load "utils.scm")
-(load "ops.scm")
-(load "macros.scm")
+(require "utils.rkt")
+(require "vm.rkt")
+(require "ops.rkt")
+(require "macros.rkt")
 
 ;; Utils
 

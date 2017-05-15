@@ -1,7 +1,11 @@
 ;; VM instructions
 
-(load "utils.scm")
-(load "vm.scm")
+#lang racket
+
+(provide (all-defined-out))
+
+(require "utils.rkt")
+(require "vm.rkt")
 
 ;; Instructions
 

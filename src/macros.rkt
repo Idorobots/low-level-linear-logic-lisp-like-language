@@ -1,8 +1,12 @@
 ;; ASM macros
 
-(load "utils.scm")
-(load "ops.scm")
+#lang racket
 
+(provide (all-defined-out))
+
+(require "utils.rkt")
+(require "vm.rkt")
+(require "ops.rkt")
 
 ;; Halts the VM.
 (define (mc-halt)

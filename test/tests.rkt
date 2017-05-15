@@ -1,10 +1,12 @@
+#lang racket
 ;; Tests
 
-(load "utils.scm")
-(load "ops.scm")
-(load "macros.scm")
-(load "builtins.scm")
-(load "asm.scm")
+(require "../src/utils.rkt")
+(require "../src/vm.rkt")
+(require "../src/ops.rkt")
+(require "../src/macros.rkt")
+(require "../src/builtins.rkt")
+(require "../src/asm.rkt")
 
 ;; Testing utils:
 
