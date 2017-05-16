@@ -51,3 +51,18 @@
   (if (<= n (string-length str))
       str
       (string-append (right-pad str (- n (string-length ch)) ch) ch)))
+
+(define zip-with map)
+
+(define (zip as bs)
+  (zip-with cons as bs))
+
+(define (scan-with f init as)
+  (cdr (reverse (foldl (lambda (a s)
+                         (cons (f a (car s))
+                               s))
+                       (list init)
+                       as))))
+
+(define (scan init as)
+  (scan-with cons init as))

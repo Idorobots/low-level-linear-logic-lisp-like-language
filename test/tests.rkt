@@ -1,5 +1,6 @@
-#lang racket
 ;; Tests
+
+#lang racket
 
 (require "../src/utils.rkt")
 (require "../src/vm.rkt")
