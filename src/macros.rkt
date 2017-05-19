@@ -63,17 +63,19 @@
     (list expr
           (op-nil? r e))))
 
-(define (mc-and tmp r expr-a expr-b)
-  (list expr-a
-        (op-swap r tmp)
-        expr-b
-        (op-and r r tmp)))
+(define (mc-and r expr-a expr-b)
+  (let ((a (returned expr-a))
+        (b (returned expr-b)))
+    (list expr-a
+          expr-b
+          (op-and r a b))))
 
-(define (mc-or tmp r expr-a expr-b)
-  (list expr-a
-        (op-swap r tmp)
-        expr-b
-        (op-or r r tmp)))
+(define (mc-or r expr-a expr-b)
+  (let ((a (returned expr-a))
+        (b (returned expr-b)))
+    (list expr-a
+          expr-b
+          (op-or r a b))))
 
 ;; Register spilling
 (define (mc-spill regs . body)

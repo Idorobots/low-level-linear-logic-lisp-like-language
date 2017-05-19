@@ -25,11 +25,11 @@
   (op-set r1 'foo)
   (op-set r2 'bar)
   (op-set r3 'bar)
-  (mc-and t1 t0
+  (mc-and t0
           (mc-not t0 (op-eq? t0 r1 r2))
-          (mc-or t2 t0
-                 (op-eq? t0 r1 r3)
-                 (op-eq? t0 r2 r3)))
+          (mc-or t1
+                 (op-eq? t1 r1 r3)
+                 (op-eq? t2 r2 r3)))
   (op-swap t0 t1))
 
 (--> (init-state 5)

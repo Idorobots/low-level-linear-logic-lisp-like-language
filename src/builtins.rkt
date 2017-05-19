@@ -63,15 +63,15 @@
 (define-fn (fn-equal?) ; (&r1 &r2) -> r3
   (mc-spill (list t1)
             ;; Check the condition.
-            (mc-if (mc-and t1 t0
+            (mc-if (mc-and t0
                            (op-atom? t0 r1)
-                           (op-atom? t0 r2))
+                           (op-atom? t1 r2))
                    ;; Both atoms.
                    (list
                     (op-eq? t0 r1 r2)
                     (op-swap t0 r3))
-                   (mc-if (mc-and t1 t0
-                                  (op-nil? t0 t1) ;; (not t1)
+                   (mc-if (mc-and t0
+                                  (op-nil? t1 t1) ;; (not t1)
                                   (mc-not t0 (op-atom? t0 r2)))
                           ;; Both non-atoms.
                           (mc-spill (list t2 t3)
@@ -97,9 +97,9 @@
 (define-fn (fn-cons) ; (r1 r2) -> r3
   (mc-spill (list t1)
             ;; Check proper list condition.
-            (mc-if (mc-or t1 t0
+            (mc-if (mc-or t0
                           (mc-not t0 (op-atom? t0 r2))
-                          (op-nil? t0 r2))
+                          (op-nil? t1 r2))
                    ;; Actually cons the value.
                    (list
                     (op-swap r3 r2)
