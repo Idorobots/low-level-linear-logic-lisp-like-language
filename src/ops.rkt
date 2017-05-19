@@ -47,6 +47,7 @@
 
 (define (arg-repr a labels)
   (let* ((regs `((,pc . "pc")
+                 (,tpc . "tpc")
                  (,r0 . "r0")
                  (,r1 . "r1")
                  (,r2 . "r2")
