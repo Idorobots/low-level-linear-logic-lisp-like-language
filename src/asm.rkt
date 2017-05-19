@@ -66,7 +66,7 @@
                (right-pad 20 " ")
                (display)))
         (print (list-ref op-labels pc))
-        (print (instruction-repr (list-ref ops pc)))
+        (print (instruction-repr (list-ref ops pc) labels))
         (print (state-format state))
         (newline)
         state)

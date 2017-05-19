@@ -9,11 +9,18 @@
 
 ;; Instructions
 
-(define (instruction repr exec)
-  (list repr exec))
+(define (instruction name args exec)
+  (list name args exec))
 
-(define instruction-repr car)
-(define instruction-exec cadr)
+(define instruction-name car)
+(define instruction-args cadr)
+(define instruction-exec caddr)
+
+(define (instruction-repr instr labels)
+  (cons (instruction-name instr)
+        (map (lambda (a)
+               (arg-repr a labels))
+             (instruction-args instr))))
 
 (define-syntax define-op
   (syntax-rules (->)
@@ -32,7 +39,7 @@
        validation
        (lambda (asm-args ...)
          asm-setup
-         (instruction `(name ,(arg-repr args asm-args ...) ...)
+         (instruction 'name (list args ...)
                       (lambda (exec-args ...)
                         body ...)))))))
 
