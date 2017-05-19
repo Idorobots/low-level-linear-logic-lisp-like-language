@@ -59,8 +59,9 @@
          (mc-noop)))
 
 (define (mc-not r expr)
-  (list expr
-        (op-nil? r r)))
+  (let ((e (returned expr)))
+    (list expr
+          (op-nil? r e))))
 
 (define (mc-and tmp r expr-a expr-b)
   (list expr-a
