@@ -14,12 +14,12 @@
 
 ;; Does nothing.
 (define (mc-noop)
-  (op-swap c c))
+  (op-swap t0 t0))
 
 ;; Jumps
-(define (mc-br-if-nil label)
-  (list (op-nil? c)
-        (op-br label)))
+(define (mc-br-if-nil r label)
+  (list (op-nil? r)
+        (op-br r label)))
 
 ;; r1 := (cons r2 r1), r2 := nil
 (define (mc-push r1 r2)
@@ -35,37 +35,38 @@
         (op-swap-car r1 fr)))
 
 ;; Conditionals
-(define (mc-if cond then else)
+(define (mc-if r cond then else)
   (let ((:then-label (gen-label ':then))
         (:end-label (gen-label ':end)))
     (list cond
-          (op-br :then-label)
+          (op-br r :then-label)
           else
           (op-jmp :end-label)
           :then-label
           then
           :end-label)))
 
-(define (mc-when cond . body)
-  (mc-if cond
+(define (mc-when r cond . body)
+  (mc-if r
+         cond
          body
          (mc-noop)))
 
-(define (mc-not expr)
+(define (mc-not r expr)
   (list expr
-        (op-nil? c)))
+        (op-nil? r r)))
 
-(define (mc-and tmp expr-a expr-b)
+(define (mc-and tmp r expr-a expr-b)
   (list expr-a
-        (op-swap c tmp)
+        (op-swap r tmp)
         expr-b
-        (op-and c tmp)))
+        (op-and r r tmp)))
 
-(define (mc-or tmp expr-a expr-b)
+(define (mc-or tmp r expr-a expr-b)
   (list expr-a
-        (op-swap c tmp)
+        (op-swap r tmp)
         expr-b
-        (op-or c tmp)))
+        (op-or r r tmp)))
 
 ;; Register spilling
 (define (mc-spill regs . body)
@@ -80,16 +81,17 @@
 ;; Function calling
 ;; FIXME Loose these in favour of CPS.
 (define (mc-ret)
-  (list (mc-pop c sp)
-        (op-swap c pc)))
+  (list (mc-pop tpc sp)
+        (op-swap tpc pc)))
 
+;; FIXME Add t0 & r1 to tmps & reordered.
 (define (mc-call label . args)
   (let* ((tmps (take (list t1 t2 t3) (length args)))
          (reordered (take (list r1 r2 r3) (length args)))
-         (prep (flatten (list (mc-push sp c)
+         (prep (flatten (list (mc-push sp tpc)
                               (op-jmp label))))
-         (call (list (op-set c (length prep))
-                     (op-add c pc)
+         (call (list (op-set tpc (length prep))
+                     (op-add tpc pc)
                      prep)))
     (if (equal? args reordered)
         call

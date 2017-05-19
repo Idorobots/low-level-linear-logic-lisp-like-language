@@ -9,24 +9,26 @@
 (define :halt -1)
 
 (define pc 0)
-(define c 1)
-(define r1 2)
-(define r2 3)
-(define r3 4)
-(define t1 5)
-(define t2 6)
-(define t3 7)
-(define sp 8)
-(define fr 9)
+(define tpc 1) ;; FIXME Get rid of this.
+(define r0 2)
+(define r1 3)
+(define r2 4)
+(define r3 5)
+(define t0 6)
+(define t1 7)
+(define t2 8)
+(define t3 9)
+(define sp 10)
+(define fr 11)
 
-(define (state pc c r1 r2 r3 t1 t2 t3 sp fr)
-  (list pc c r1 r2 r3 t1 t2 t3 sp fr))
+(define (state pc tpc r0 r1 r2 r3 t0 t1 t2 t3 sp fr)
+  (list pc tpc r0 r1 r2 r3 t0 t1 t2 t3 sp fr))
 
 (define (init-state cells)
   (state 0
-         'init                ;; Initial state.
-         'nil 'nil 'nil       ;; Main registers.
-         'nil 'nil 'nil       ;; Temp registers.
+         0
+         'nil 'nil 'nil 'nil  ;; Main registers.
+         'nil 'nil 'nil 'nil  ;; Temp registers.
          'nil                 ;; Stack pointer.
          (make-cells cells))) ;; Free list.
 
@@ -36,8 +38,8 @@
         (+ 1 (n-cells (cdr cells)))
         0))
   (apply format
-         "pc=~s, c=~s, r1=~s, r2=~s, r3=~s, t1=~s, t2=~s, t3=~s, sp=~s, fr: ~s cells"
-         (append (take state 9)
+         "pc=~s, tpc=~s, r0=~s, r1=~s, r2=~s, r3=~s, t0=~s, t1=~s, t2=~s, t3=~s, sp=~s, fr: ~s cells"
+         (append (take state (- (length state) 1))
                  (--> state last n-cells list))))
 
 (define (reg state r)

@@ -25,12 +25,12 @@
   (op-set r1 'foo)
   (op-set r2 'bar)
   (op-set r3 'bar)
-  (mc-and t1
-          (mc-not (op-eq? r1 r2))
-          (mc-or t2
-                 (op-eq? r1 r3)
-                 (op-eq? r2 r3)))
-  (op-swap c t1))
+  (mc-and t1 t0
+          (mc-not t0 (op-eq? t0 r1 r2))
+          (mc-or t2 t0
+                 (op-eq? t0 r1 r3)
+                 (op-eq? t0 r2 r3)))
+  (op-swap t0 t1))
 
 (--> (init-state 5)
      (test ':t-conditionals
@@ -39,16 +39,16 @@
 
 (define-fn (t-basic-if)
   (op-set r1 'true)
-  (mc-if (op-nil? r1)
+  (mc-if t0 (op-nil? t0 r1)
          (op-set t1 'then)
          (op-set t1 'else))
-  (mc-if (op-nil? r2)
+  (mc-if t0 (op-nil? t0 r2)
          (op-set t2 'then)
          (op-set t2 'else))
-  (mc-if (list (op-nil? r3)
-               (op-swap c r1)
-               (op-atom? t1)
-               (op-and c r1))
+  (mc-if t0 (list (op-nil? t0 r3)
+                  (op-swap t0 r1)
+                  (op-atom? t0 t1)
+                  (op-and t0 t0 r1))
          (op-set t3 'then)
          (op-set t3 'else)))
 
@@ -60,9 +60,9 @@
      (reg-assert t3 'then))
 
 (define-fn (t-nested-if)
-  (mc-if (op-nil? r1)
+  (mc-if t0 (op-nil? t0 r1)
          (op-set t1 'is-nil)
-         (mc-if (op-atom? r1)
+         (mc-if t0 (op-atom? t0 r1)
                 (op-set t1 'is-atom)
                 (op-set t1 'is-list))))
 
