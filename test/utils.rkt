@@ -12,9 +12,9 @@
 (provide define-fn)
 
 (define (break tag)
-  (lambda (labels)
-    (instruction 'break
-                 (list tag)
+  (instruction 'break
+               (list tag)
+               (lambda (labels)
                  (lambda (state)
                    (debug tag state)))))
 

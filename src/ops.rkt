@@ -9,12 +9,15 @@
 
 ;; Instructions
 
-(define (instruction name args exec)
-  (list name args exec))
+(define (instruction name args asm)
+  (vector '&instruction name args asm))
 
-(define instruction-name car)
-(define instruction-args cadr)
-(define instruction-exec caddr)
+(define (instruction-name i)
+  (vector-ref i 1))
+(define (instruction-args i)
+  (vector-ref i 2))
+(define (instruction-asm i)
+  (vector-ref i 3))
 
 (define (instruction-repr instr labels)
   (cons (instruction-name instr)
@@ -37,9 +40,10 @@
        -> (exec-args ...) body ...)
      (define (name args ...)
        validation
-       (lambda (asm-args ...)
-         asm-setup
-         (instruction 'name (list args ...)
+       (instruction 'name
+                    (list args ...)
+                    (lambda (asm-args ...)
+                      asm-setup
                       (lambda (exec-args ...)
                         body ...)))))))
 
