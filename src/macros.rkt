@@ -8,6 +8,13 @@
 (require "vm.rkt")
 (require "ops.rkt")
 
+;; Utils
+
+(define (returned expr)
+  (cond ((list? expr) (returned (last expr)))
+        ((instruction? expr) (car (instruction-args expr))) ;; FIXME Don't assume this is the returned value.
+        (':else (error-fmt "Expecting expression returning a value but got ~s instead" expr))))
+
 ;; Halts the VM.
 (define (mc-halt)
   (op-jmp ':halt))
@@ -35,20 +42,19 @@
         (op-swap-car r1 fr)))
 
 ;; Conditionals
-(define (mc-if r cond then else)
+(define (mc-if cond then else)
   (let ((:then-label (gen-label ':then))
         (:end-label (gen-label ':end)))
     (list cond
-          (op-br r :then-label)
+          (op-br (returned cond) :then-label)
           else
           (op-jmp :end-label)
           :then-label
           then
           :end-label)))
 
-(define (mc-when r cond . body)
-  (mc-if r
-         cond
+(define (mc-when cond . body)
+  (mc-if cond
          body
          (mc-noop)))
 

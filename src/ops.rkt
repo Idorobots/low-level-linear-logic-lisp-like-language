@@ -12,6 +12,10 @@
 (define (instruction name args asm)
   (vector '&instruction name args asm))
 
+(define (instruction? i)
+  (and (vector? i)
+       (equal? (vector-ref i 0) '&instruction)))
+
 (define (instruction-name i)
   (vector-ref i 1))
 (define (instruction-args i)
