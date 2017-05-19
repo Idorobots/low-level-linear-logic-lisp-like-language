@@ -38,30 +38,29 @@
                             (op-swap t1 r1)
                             (mc-call ':fn-free r1))))) ;; Free (car r1).
 
-;; FIXME Don't use t0.
 (define-fn (fn-copy) ; &r1 -> r2
-  ;; Check condition.
-  (mc-if (op-nil? t0 r2)
-         ;; Check what to do.
-         (mc-if (op-atom? t0 r1)
-                (op-assign r2 r1)
-                (mc-spill (list t1 t2)
-                          ;; Compute the (cdr r1)
-                          (mc-pop t1 r1)
-                          (mc-call ':fn-copy r1 r2) ;; Copy (cdr r1).
-                          (op-swap t1 r1)
-                          (op-swap t2 r2) ;; Result is stored in r2.
-                          (mc-call ':fn-copy r1 r2) ;; Copy (car r1).
-                          (op-swap t1 r1)
-                          (op-swap t2 r2)
-                          ;; Restore the argument.
-                          (mc-push r1 t1)
-                          (mc-push r2 t2)))
-         (op-error 'fn-copy-error)))
+  (mc-spill (list t0)
+            ;; Check condition.
+            (mc-if (op-nil? t0 r2)
+                   ;; Check what to do.
+                   (mc-if (op-atom? t0 r1)
+                          (op-assign r2 r1)
+                          (mc-spill (list t1 t2)
+                                    ;; Compute the (cdr r1)
+                                    (mc-pop t1 r1)
+                                    (mc-call ':fn-copy r1 r2) ;; Copy (cdr r1).
+                                    (op-swap t1 r1)
+                                    (op-swap t2 r2) ;; Result is stored in r2.
+                                    (mc-call ':fn-copy r1 r2) ;; Copy (car r1).
+                                    (op-swap t1 r1)
+                                    (op-swap t2 r2)
+                                    ;; Restore the argument.
+                                    (mc-push r1 t1)
+                                    (mc-push r2 t2)))
+                   (op-error 'fn-copy-error))))
 
-;; FIXME Don't use t0.
 (define-fn (fn-equal?) ; (&r1 &r2) -> r3
-  (mc-spill (list t1)
+  (mc-spill (list t0 t1)
             ;; Check the condition.
             (mc-if (mc-and t0
                            (op-atom? t0 r1)
@@ -93,9 +92,8 @@
                           ;; An atom & non-atom.
                           (op-set r3 'nil)))))
 
-;; FIXME Don't use t0.
 (define-fn (fn-cons) ; (r1 r2) -> r3
-  (mc-spill (list t1)
+  (mc-spill (list t0 t1)
             ;; Check proper list condition.
             (mc-if (mc-or t0
                           (mc-not t0 (op-atom? t0 r2))
@@ -107,17 +105,17 @@
                    ;; Rise error otherwise.
                    (op-error 'fn-cons-error))))
 
-;; FIXME Don't use t0.
 (define-fn (fn-car) ; r1 -> r2
-  (mc-if (mc-not t0 (op-atom? t0 r1))
-         (list (mc-pop r2 r1)
-               (mc-call ':fn-free r1))
-         (op-error 'fn-car-error)))
+  (mc-spill (list t0)
+            (mc-if (mc-not t0 (op-atom? t0 r1))
+                   (list (mc-pop r2 r1)
+                         (mc-call ':fn-free r1))
+                   (op-error 'fn-car-error))))
 
-;; FIXME Don't use t0.
 (define-fn (fn-cdr) ; r1 -> r2
-  (mc-if (mc-not t0 (op-atom? t0 r1))
-         (list (op-swap r1 r2)
-               (mc-pop r1 r2)
-               (mc-call ':fn-free r1))
-         (op-error 'fn-car-error)))
+  (mc-spill (list t0)
+            (mc-if (mc-not t0 (op-atom? t0 r1))
+                   (list (op-swap r1 r2)
+                         (mc-pop r1 r2)
+                         (mc-call ':fn-free r1))
+                   (op-error 'fn-car-error))))

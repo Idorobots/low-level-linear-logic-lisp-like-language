@@ -26,7 +26,7 @@
   (op-set r3 3)
   (mc-call ':fn-cons r3 r2 r1))
 
-(--> (init-state 10)
+(--> (init-state 15)
      (test ':t-cons
            (t-cons)
            (fn-cons))
@@ -55,14 +55,14 @@
      (reg-assert r3 'nil)
      (reg-assert fr (make-cells 10)))
 
-(--> (init-state 10)
+(--> (init-state 15)
      (reg-set sp '(-1 . nil))
      (reg-set r1 '(3 2 1 . nil))
      (test ':fn-copy
            (fn-copy))
      (reg-assert r1 '(3 2 1 . nil)) ;; 0 cells, supplied externally
      (reg-assert r2 '(3 2 1 . nil)) ;; 3 cells
-     (reg-assert fr (make-cells 7)))
+     (reg-assert fr (make-cells 12)))
 
 (define-fn (t-copy)
   (op-set r1 1)
