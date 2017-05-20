@@ -100,7 +100,7 @@
          (prep (flatten (list (mc-push sp tpc)
                               (op-jmp label))))
          (call (list (op-set tpc (length prep))
-                     (op-add tpc pc)
+                     (op-add tpc tpc pc)
                      prep)))
     (if (equal? args reordered)
         call

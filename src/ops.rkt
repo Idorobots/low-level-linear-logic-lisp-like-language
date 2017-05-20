@@ -74,13 +74,13 @@
 
 (define-syntax define-math-op
   (syntax-rules ()
-    ((define-math-op (name r1 r2) op)
-     (define-op (name r1 r2) -> (labels) -> (state)
+    ((define-math-op name op)
+     (define-op (name r0 r1 r2) -> (labels) -> (state)
        (let ((a (reg state r1))
              (b (reg state r2)))
          (if (and (number? a)
                   (number? b))
-             (reg-set state r1 (op a b))
+             (reg-set state r0 (op a b))
              (error 'op-math-error)))))))
 
 ;; Opcodes (op dest src ...):
@@ -198,10 +198,10 @@
         (error 'op-swap-cdr-error))))
 
 ;; r1 := r1 op r2
-(define-math-op (op-add r1 r2) +)
-(define-math-op (op-sub r1 r2) -)
-(define-math-op (op-mul r1 r2) *)
-(define-math-op (op-div r1 r2) /)
+(define-math-op op-add +)
+(define-math-op op-sub -)
+(define-math-op op-mul *)
+(define-math-op op-div /)
 
 ;; Error handling
 

@@ -50,10 +50,10 @@
   (op-swap-car r1 fr)
   (op-set t1 25)
   (op-set t2 3)
-  (op-sub t1 t2)
+  (op-sub t1 t1 t2)
   (op-swap t2 t3)
   (op-set t3 5)
-  (op-add t1 t3))
+  (op-add t1 t1 t3))
 
 (--> (init-state 4)
      (test ':t-basic-ops
