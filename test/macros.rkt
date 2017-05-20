@@ -73,7 +73,7 @@
      (reg-assert t1 'is-list))
 
 (define-fn (t-functions)
-  (mc-call ':id r1 r2)
+  (mc-call ':id r0 r1 r2)
   (op-set r3 23))
 
 (--> (init-state 5)
@@ -81,7 +81,7 @@
      (reg-set r2 5)
      (test ':t-functions
            (t-functions)
-           (mc-define ':id ; r1 -> r2
+           (mc-define ':id ; (r0 r1) -> r2
                       (break 1)
                       (op-assign r2 r1)
                       (break 2)))
@@ -90,14 +90,14 @@
      (reg-assert r3 23))
 
 (define-fn (t-call-reordered)
-  (mc-call ':rand r2))
+  (mc-call ':rand r0 r2))
 
 (--> (init-state 5)
      (reg-set r1 23)
      (reg-set r2 13)
      (test ':t-call-reordered
            (t-call-reordered)
-           (mc-define ':rand ; () -> r1
+           (mc-define ':rand ; r0 -> r1
                       (break 1)
                       (op-set r1 5)
                       (break 2)))

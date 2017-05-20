@@ -93,10 +93,9 @@
   (list (mc-pop tpc sp)
         (op-swap tpc pc)))
 
-;; FIXME Add t0 & r1 to tmps & reordered.
 (define (mc-call label . args)
-  (let* ((tmps (take (list t1 t2 t3) (length args)))
-         (reordered (take (list r1 r2 r3) (length args)))
+  (let* ((tmps (take (list t0 t1 t2 t3) (length args)))
+         (reordered (take (list r0 r1 r2 r3) (length args)))
          (prep (flatten (list (mc-push sp tpc)
                               (op-jmp label))))
          (call (list (op-set tpc (length prep))

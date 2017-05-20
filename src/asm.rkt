@@ -20,7 +20,7 @@
             ((symbol? (car remaining)) (loop i (cdr remaining)))
             (':else (loop (+ i 1) (cdr remaining))))))
   (let* ((flat (flatten (list ':init
-                              (mc-call startup)
+                              (mc-call startup r0)
                               (mc-halt)
                               code)))
          (labels (cons (cons ':halt :halt)

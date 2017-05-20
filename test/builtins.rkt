@@ -20,11 +20,11 @@
 (define-fn (t-cons)
   (op-set r1 1)
   (op-set r2 'nil)
-  (mc-call ':fn-cons r1 r2 r3)
+  (mc-call ':fn-cons r0 r1 r2 r3)
   (op-set r1 2)
-  (mc-call ':fn-cons r1 r3 r2)
+  (mc-call ':fn-cons r0 r1 r3 r2)
   (op-set r3 3)
-  (mc-call ':fn-cons r3 r2 r1))
+  (mc-call ':fn-cons r0 r3 r2 r1))
 
 (--> (init-state 15)
      (test ':t-cons
@@ -42,18 +42,18 @@
 
 (define-fn (t-free-cons)
   (op-set r1 1)
-  (mc-call ':fn-cons r1 r2 r3)
+  (mc-call ':fn-cons r0 r1 r2 r3)
   (op-set r1 2)
-  (mc-call ':fn-cons r1 r3 r3)
-  (mc-call ':fn-free r3))
+  (mc-call ':fn-cons r0 r1 r3 r3)
+  (mc-call ':fn-free r0 r3))
 
-(--> (init-state 10)
+(--> (init-state 15)
      (test ':t-free-cons
            (t-free-cons)
            (fn-free)
            (fn-cons))
      (reg-assert r3 'nil)
-     (reg-assert fr (make-cells 10)))
+     (reg-assert fr (make-cells 15)))
 
 (--> (init-state 15)
      (reg-set sp '(-1 . nil))
@@ -66,11 +66,11 @@
 
 (define-fn (t-copy)
   (op-set r1 1)
-  (mc-call ':fn-cons r1 r2 r3)
+  (mc-call ':fn-cons r0 r1 r2 r3)
   (op-set r1 2)
-  (mc-call ':fn-cons r1 r3 r3)
+  (mc-call ':fn-cons r0 r1 r3 r3)
   (break 1)
-  (mc-call ':fn-copy r3 r2))
+  (mc-call ':fn-copy r0 r3 r2))
 
 (--> (init-state 15)
      (test ':t-copy
@@ -133,19 +133,19 @@
 
 (define-fn (t-equal-cons)
   (op-set r1 1)
-  (mc-call ':fn-cons r1 r2 r3)
+  (mc-call ':fn-cons r0 r1 r2 r3)
   (op-set r1 2)
-  (mc-call ':fn-cons r1 r3 r3)
-  (mc-call ':fn-equal? r3 r2 r1)
+  (mc-call ':fn-cons r0 r1 r3 r3)
+  (mc-call ':fn-equal? r0 r3 r2 r1)
   (op-swap r1 t1)
   (break 1)
-  (mc-call ':fn-copy r3 r2)
-  (mc-call ':fn-equal? r3 r2 r1)
+  (mc-call ':fn-copy r0 r3 r2)
+  (mc-call ':fn-equal? r0 r3 r2 r1)
   (op-swap r1 t2)
   (break 2)
   (op-set r1 3)
-  (mc-call ':fn-cons r1 r3 r3)
-  (mc-call ':fn-equal? r3 r2 r1)
+  (mc-call ':fn-cons r0 r1 r3 r3)
+  (mc-call ':fn-equal? r0 r3 r2 r1)
   (op-swap r1 t3)
   (break 3))
 
@@ -160,8 +160,8 @@
      (reg-assert t3 'nil))
 
 (define-fn (t-car-cdr)
-  (mc-call ':fn-cdr r1 r2)
-  (mc-call ':fn-car r2 r1))
+  (mc-call ':fn-cdr r0 r1 r2)
+  (mc-call ':fn-car r0 r2 r1))
 
 (--> (init-state 10)
      (reg-set r1 '(2 1 . nil))
