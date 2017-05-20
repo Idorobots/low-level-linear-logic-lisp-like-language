@@ -9,11 +9,25 @@
 
 ;; Instructions
 
-(define (instruction repr exec)
-  (list repr exec))
+(define (instruction name args asm)
+  (vector '&instruction name args asm))
 
-(define instruction-repr car)
-(define instruction-exec cadr)
+(define (instruction? i)
+  (and (vector? i)
+       (equal? (vector-ref i 0) '&instruction)))
+
+(define (instruction-name i)
+  (vector-ref i 1))
+(define (instruction-args i)
+  (vector-ref i 2))
+(define (instruction-asm i)
+  (vector-ref i 3))
+
+(define (instruction-repr instr labels)
+  (cons (instruction-name instr)
+        (map (lambda (a)
+               (arg-repr a labels))
+             (instruction-args instr))))
 
 (define-syntax define-op
   (syntax-rules (->)
@@ -30,9 +44,10 @@
        -> (exec-args ...) body ...)
      (define (name args ...)
        validation
-       (lambda (asm-args ...)
-         asm-setup
-         (instruction `(name ,(arg-repr args asm-args ...) ...)
+       (instruction 'name
+                    (list args ...)
+                    (lambda (asm-args ...)
+                      asm-setup
                       (lambda (exec-args ...)
                         body ...)))))))
 
@@ -40,10 +55,12 @@
 
 (define (arg-repr a labels)
   (let* ((regs `((,pc . "pc")
-                 (,c . "c")
+                 (,tpc . "tpc")
+                 (,r0 . "r0")
                  (,r1 . "r1")
                  (,r2 . "r2")
                  (,r3 . "r3")
+                 (,t0 . "t0")
                  (,t1 . "t1")
                  (,t2 . "t2")
                  (,t3 . "t3")
@@ -57,13 +74,13 @@
 
 (define-syntax define-math-op
   (syntax-rules ()
-    ((define-math-op (name r1 r2) op)
-     (define-op (name r1 r2) -> (labels) -> (state)
+    ((define-math-op name op)
+     (define-op (name r0 r1 r2) -> (labels) -> (state)
        (let ((a (reg state r1))
              (b (reg state r2)))
          (if (and (number? a)
                   (number? b))
-             (reg-set state r1 (op a b))
+             (reg-set state r0 (op a b))
              (error 'op-math-error)))))))
 
 ;; Opcodes (op dest src ...):
@@ -79,8 +96,8 @@
   -> (state)
   (set-pc-jmp state off))
 
-;; pc := (address-of label) if (not (nil? c))
-(define-op (op-br label)
+;; pc := (address-of label) if (not (nil? r))
+(define-op (op-br r label)
   (unless (symbol? label)
     (error-fmt "Invalid op-br label ~s" label))
 
@@ -88,41 +105,41 @@
   (define off (label-offset labels label))
 
   -> (state)
-  (if (nil? (reg state c))
+  (if (nil? (reg state r))
       state
       (set-pc-jmp state off)))
 
-;; c := (nil? r)
-(define-op (op-nil? r) -> (labels) -> (state)
-  (reg-set state c (if (nil? (reg state r))
-                       'true
-                       'nil)))
+;; r1 := (nil? r2)
+(define-op (op-nil? r1 r2) -> (labels) -> (state)
+  (reg-set state r1 (if (nil? (reg state r2))
+                        'true
+                        'nil)))
 
-;; c := (atom? r)
-(define-op (op-atom? r) -> (labels) -> (state)
-  (reg-set state c (if (atom? (reg state r))
-                       'true
-                       'nil)))
+;; r1 := (atom? r2)
+(define-op (op-atom? r1 r2) -> (labels) -> (state)
+  (reg-set state r1 (if (atom? (reg state r2))
+                        'true
+                        'nil)))
 
-;; c := (eq? r1 r2)
-(define-op (op-eq? r1 r2) -> (labels) -> (state)
-  (reg-set state c (if (eq? (reg state r1) (reg state r2))
-                       'true
-                       'nil)))
+;; r1 := (eq? r2 r3)
+(define-op (op-eq? r1 r2 r3) -> (labels) -> (state)
+  (reg-set state r1 (if (eq? (reg state r2) (reg state r3))
+                        'true
+                        'nil)))
 
-;; c := (and r1 r2)
-(define-op (op-and r1 r2) -> (labels) -> (state)
-  (reg-set state c (if (and (not (nil? (reg state r1)))
-                            (not (nil? (reg state r2))))
-                       'true
-                       'nil)))
+;; r1 := (and r2 r3)
+(define-op (op-and r1 r2 r3) -> (labels) -> (state)
+  (reg-set state r1 (if (and (not (nil? (reg state r2)))
+                             (not (nil? (reg state r3))))
+                        'true
+                        'nil)))
 
-;; c := (or r1 r2)
-(define-op (op-or r1 r2) -> (labels) -> (state)
-  (reg-set state c (if (or (not (nil? (reg state r1)))
-                           (not (nil? (reg state r2))))
-                       'true
-                       'nil)))
+;; r1 := (or r2 r3)
+(define-op (op-or r1 r2 r3) -> (labels) -> (state)
+  (reg-set state r1 (if (or (not (nil? (reg state r2)))
+                            (not (nil? (reg state r3))))
+                        'true
+                        'nil)))
 
 ;; r := atom
 (define-op (op-set r atom)
@@ -181,7 +198,12 @@
         (error 'op-swap-cdr-error))))
 
 ;; r1 := r1 op r2
-(define-math-op (op-add r1 r2) +)
-(define-math-op (op-sub r1 r2) -)
-(define-math-op (op-mul r1 r2) *)
-(define-math-op (op-div r1 r2) /)
+(define-math-op op-add +)
+(define-math-op op-sub -)
+(define-math-op op-mul *)
+(define-math-op op-div /)
+
+;; Error handling
+
+(define-op (op-error e) -> (labels) -> (state)
+  (error-fmt "User error triggered: ~s" e))

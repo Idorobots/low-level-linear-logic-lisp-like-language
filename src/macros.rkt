@@ -8,18 +8,25 @@
 (require "vm.rkt")
 (require "ops.rkt")
 
+;; Utils
+
+(define (returned expr)
+  (cond ((list? expr) (returned (last expr)))
+        ((instruction? expr) (car (instruction-args expr))) ;; FIXME Don't assume this is the returned value.
+        (':else (error-fmt "Expecting expression returning a value but got ~s instead" expr))))
+
 ;; Halts the VM.
 (define (mc-halt)
   (op-jmp ':halt))
 
 ;; Does nothing.
 (define (mc-noop)
-  (op-swap c c))
+  (op-swap t0 t0))
 
 ;; Jumps
-(define (mc-br-if-nil label)
-  (list (op-nil? c)
-        (op-br label)))
+(define (mc-br-if-nil r label)
+  (list (op-nil? r)
+        (op-br r label)))
 
 ;; r1 := (cons r2 r1), r2 := nil
 (define (mc-push r1 r2)
@@ -39,7 +46,7 @@
   (let ((:then-label (gen-label ':then))
         (:end-label (gen-label ':end)))
     (list cond
-          (op-br :then-label)
+          (op-br (returned cond) :then-label)
           else
           (op-jmp :end-label)
           :then-label
@@ -51,21 +58,24 @@
          body
          (mc-noop)))
 
-(define (mc-not expr)
-  (list expr
-        (op-nil? c)))
+(define (mc-not r expr)
+  (let ((e (returned expr)))
+    (list expr
+          (op-nil? r e))))
 
-(define (mc-and tmp expr-a expr-b)
-  (list expr-a
-        (op-swap c tmp)
-        expr-b
-        (op-and c tmp)))
+(define (mc-and r expr-a expr-b)
+  (let ((a (returned expr-a))
+        (b (returned expr-b)))
+    (list expr-a
+          expr-b
+          (op-and r a b))))
 
-(define (mc-or tmp expr-a expr-b)
-  (list expr-a
-        (op-swap c tmp)
-        expr-b
-        (op-or c tmp)))
+(define (mc-or r expr-a expr-b)
+  (let ((a (returned expr-a))
+        (b (returned expr-b)))
+    (list expr-a
+          expr-b
+          (op-or r a b))))
 
 ;; Register spilling
 (define (mc-spill regs . body)
@@ -80,16 +90,16 @@
 ;; Function calling
 ;; FIXME Loose these in favour of CPS.
 (define (mc-ret)
-  (list (mc-pop c sp)
-        (op-swap c pc)))
+  (list (mc-pop tpc sp)
+        (op-swap tpc pc)))
 
 (define (mc-call label . args)
-  (let* ((tmps (take (list t1 t2 t3) (length args)))
-         (reordered (take (list r1 r2 r3) (length args)))
-         (prep (flatten (list (mc-push sp c)
+  (let* ((tmps (take (list t0 t1 t2 t3) (length args)))
+         (reordered (take (list r0 r1 r2 r3) (length args)))
+         (prep (flatten (list (mc-push sp tpc)
                               (op-jmp label))))
-         (call (list (op-set c (length prep))
-                     (op-add c pc)
+         (call (list (op-set tpc (length prep))
+                     (op-add tpc tpc pc)
                      prep)))
     (if (equal? args reordered)
         call
