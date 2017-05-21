@@ -252,3 +252,43 @@
            (fn-cons)
            (t-closure))
      (reg-assert r3 '(7 23 5 . nil)))
+
+(define-fn (t-closure-call)
+  (mc-call ':fn-make-env r0 r1)
+  (op-set r2 23)
+  (mc-call ':fn-add-env r0 r1 r2 r1)
+  (op-set r2 5)
+  (mc-call ':fn-add-env r0 r1 r2 r1)
+  (op-addr r2 ':test)
+  (mc-call ':fn-make-closure r0 r1 r2 r3)
+  (op-swap r0 r3)
+  (op-set r1 5)
+  (break 1)
+  (mc-call-closure r0 r1 r2))
+
+(--> (init-state 25)
+     (test ':t-closure-call
+           (mc-define ':test ; Should be at offset 7.
+                      (mc-spill (list t0 r3)
+                                (op-swap t0 r1) ;; Argument in t0.
+                                (op-swap r1 r0) ;; Env in r1.
+                                (op-set r2 1)
+                                (break 2)
+                                (mc-call ':fn-get-env r0 r1 r2 r3) ;; Val in r3.
+                                (op-swap r0 r1) ;; Env in r0.
+                                (break 3)
+                                (op-add r2 t0 r3)))
+           (fn-free)
+           (fn-copy)
+           (fn-car)
+           (fn-cdr)
+           (fn-cons)
+           (fn-nth)
+           (fn-make-env)
+           (fn-add-env)
+           (fn-get-env)
+           (fn-make-closure)
+           (t-closure-call))
+     (reg-assert r0 '(7 5 23 . nil)) ; 3 cells.
+     (reg-assert r2 28)
+     (reg-assert fr (make-cells 22)))

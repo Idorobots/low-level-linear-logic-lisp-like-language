@@ -37,10 +37,14 @@
     (if (pair? cells)
         (+ 1 (n-cells (cdr cells)))
         0))
-  (apply format
-         "pc=~s, tpc=~s, r0=~s, r1=~s, r2=~s, r3=~s, t0=~s, t1=~s, t2=~s, t3=~s, sp=~s, fr: ~s cells"
-         (append (take state (- (length state) 1))
-                 (--> state last n-cells list))))
+  (string-append
+   (apply format
+          "pc=~s, tpc=~s, r0=~s, r1=~s, r2=~s, r3=~s, t0=~s, t1=~s, t2=~s, t3=~s, sp=~s, "
+          (take state (- (length state) 1)))
+   (let ((v (last state)))
+     (if (atom? v)
+         (format "fr=~s" v)
+         (format "fr: ~s cells" (n-cells v))))))
 
 (define (reg state r)
   (list-ref state r))

@@ -134,8 +134,18 @@
   (mc-call ':fn-cons r0 r2 r1 r3))
 
 (define-fn (fn-get-env) ; (r0 &r1 r2) -> r3
-  (mc-call ':fn-copy r0 r1 r3)
-  (mc-call ':fn-nth r0 r2 r3 r3))
+  (mc-spill (list t0)
+            (op-swap r2 t0)
+            (mc-call ':fn-copy r0 r1 r2)
+            (op-swap r1 t0)
+            (mc-call ':fn-nth r0 r1 r2 r3)
+            (op-swap r1 t0)))
 
 (define-fn (fn-make-closure) ; (r0 r1 r2) -> r3
   (mc-call ':fn-cons r0 r2 r1 r3))
+
+(define (mc-call-closure c . args)
+  (mc-spill (list t3) ;; FIXME Might clash with mc-call reordered args.
+            (mc-pop t3 c)
+            (apply mc-call t3 c args)
+            (mc-push c t3)))

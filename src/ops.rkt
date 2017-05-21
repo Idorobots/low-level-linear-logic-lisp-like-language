@@ -96,6 +96,15 @@
   -> (state)
   (set-pc-jmp state off))
 
+;; pc := r
+(define-op (op-jmp-indirect r)
+  (unless (number? r)
+    (error-fmt "Invalid op-jmp-indirect argument ~s" r))
+
+  -> (labels)
+  -> (state)
+  (set-pc-jmp state (reg state r)))
+
 ;; pc := (address-of label) if (not (nil? r))
 (define-op (op-br r label)
   (unless (symbol? label)
