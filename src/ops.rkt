@@ -141,6 +141,19 @@
                         'true
                         'nil)))
 
+;; r := (address-of label)
+(define-op (op-addr r label)
+  (unless (symbol? label)
+    (error-fmt "Invalid op-addr label ~s" label))
+
+  -> (labels)
+  (define off (label-offset labels label))
+
+  -> (state)
+  (if (atom? (reg state r))
+      (reg-set state r off)
+      (error 'op-addr-error)))
+
 ;; r := atom
 (define-op (op-set r atom)
   (unless (atom? atom)

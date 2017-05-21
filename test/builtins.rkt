@@ -240,3 +240,15 @@
      (reg-assert t0 5)
      (reg-assert t1 23)
      (reg-assert fr (make-cells 23)))
+
+(define-fn (t-closure)
+  (op-addr r2 ':fn-make-closure)
+  (mc-call ':fn-make-closure r0 r1 r2 r3))
+
+(--> (init-state 20)
+     (reg-set r1 '(23 5 . nil))
+     (test ':t-closure
+           (fn-make-closure) ; Should be at offset 7.
+           (fn-cons)
+           (t-closure))
+     (reg-assert r3 '(7 23 5 . nil)))

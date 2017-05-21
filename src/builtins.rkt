@@ -136,3 +136,6 @@
 (define-fn (fn-get-env) ; (r0 &r1 r2) -> r3
   (mc-call ':fn-copy r0 r1 r3)
   (mc-call ':fn-nth r0 r2 r3 r3))
+
+(define-fn (fn-make-closure) ; (r0 r1 r2) -> r3
+  (mc-call ':fn-cons r0 r2 r1 r3))
