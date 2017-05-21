@@ -87,7 +87,7 @@
                           ;; An atom & non-atom.
                           (op-set r3 'nil)))))
 
-(define-fn (fn-cons) ; (r1 r2) -> r3
+(define-fn (fn-cons) ; (r0 r1 r2) -> r3
   (mc-spill (list t0 t1)
             ;; Check proper list condition.
             (mc-if (mc-or t0
@@ -106,7 +106,7 @@
                    (list (mc-pop r2 r1)
                          (mc-call ':fn-free r0 r1)))))
 
-(define-fn (fn-cdr) ; r1 -> r2
+(define-fn (fn-cdr) ; (r0 r1) -> r2
   (mc-spill (list t0)
             (mc-if (op-atom? t0 r1)
                    (op-error 'fn-car-error)
