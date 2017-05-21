@@ -113,3 +113,16 @@
                    (list (op-swap r1 r2)
                          (mc-pop r1 r2)
                          (mc-call ':fn-free r0 r1)))))
+
+(define-fn (fn-nth) ; (r0 r1 r2) -> r3
+  (mc-spill (list t0)
+            (op-set t0 0)
+            (mc-if (op-eq? t0 r1 t0)
+                   (list (op-swap r1 r2)
+                         (mc-call ':fn-car r0 r1 r3))
+                   (list (op-set t0 1)
+                         (op-sub t0 r1 t0)
+                         (op-swap r1 r2)
+                         (mc-call ':fn-cdr r0 r1 r2)
+                         (op-swap t0 r1)
+                         (mc-call ':fn-nth r0 r1 r2 r3)))))
