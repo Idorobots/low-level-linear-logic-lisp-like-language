@@ -91,10 +91,19 @@
     (error-fmt "Invalid op-jmp label ~s" label))
 
   -> (labels)
-  (define off (label-offset labels label))
+  (define off (label-offset labels label)) ;; FIXME This should be relative to current PC.
 
   -> (state)
   (set-pc-jmp state off))
+
+;; pc := r
+(define-op (op-jmp-indirect r)
+  (unless (number? r)
+    (error-fmt "Invalid op-jmp-indirect argument ~s" r))
+
+  -> (labels)
+  -> (state)
+  (set-pc-jmp state (reg state r)))
 
 ;; pc := (address-of label) if (not (nil? r))
 (define-op (op-br r label)
@@ -141,6 +150,19 @@
                         'true
                         'nil)))
 
+;; r := (address-of label)
+(define-op (op-addr r label)
+  (unless (symbol? label)
+    (error-fmt "Invalid op-addr label ~s" label))
+
+  -> (labels)
+  (define off (label-offset labels label))
+
+  -> (state)
+  (if (atom? (reg state r))
+      (reg-set state r off)
+      (error 'op-addr-error)))
+
 ;; r := atom
 (define-op (op-set r atom)
   (unless (atom? atom)
@@ -148,8 +170,7 @@
 
   -> (labels)
   -> (state)
-  (if (and (atom? (reg state r))
-           (atom? atom))
+  (if (atom? (reg state r))
       (reg-set state r atom)
       (error 'op-set-error)))
 
@@ -177,25 +198,25 @@
   -> (labels)
   -> (state)
   (let ((b (reg state r2)))
-    (if (not (atom? b))
+    (if (atom? b)
+        (error 'op-swap-car-error)
         (--> state
              (reg-set r1 (car b))
-             (reg-set r2 (cons (reg state r1) (cdr b))))
-        (error 'op-swap-car-error))))
+             (reg-set r2 (cons (reg state r1) (cdr b)))))))
 
 ;; tmp := r1, r1 := (cdr r2), (cdr r2) := tmp
 (define-op (op-swap-cdr r1 r2)
   (when (equal? r1 r2)
     (error-fmt "op-swap-cdr arguments must be different, given ~s" r1))
 
--> (labels)
--> (state)
+  -> (labels)
+  -> (state)
   (let ((b (reg state r2)))
-    (if (not (atom? b))
+    (if (atom? b)
+        (error 'op-swap-cdr-error)
         (--> state
              (reg-set r1 (cdr b))
-             (reg-set r2 (cons (car b) (reg state r1))))
-        (error 'op-swap-cdr-error))))
+             (reg-set r2 (cons (car b) (reg state r1)))))))
 
 ;; r1 := r1 op r2
 (define-math-op op-add +)
