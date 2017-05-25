@@ -48,3 +48,12 @@
     (display s)
     (newline)
     s))
+
+(define-syntax test-error
+  (syntax-rules ()
+    ((test-error body ...)
+     (unless (equal? 'caught-an-error
+                     (with-handlers ((identity (lambda (e)
+                                                 'caught-an-error)))
+                       body ...))
+       (error "Test did not catch an error.")))))

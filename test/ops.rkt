@@ -9,10 +9,27 @@
 
 ;; Basic instructions:
 
+(test-error
+ (--> (init-state 1)
+      (test-op (op-jmp 23))))
+
+(test-error
+ (--> (init-state 1)
+      (test-op (op-jmp ':test))))
+
 (--> (init-state 1)
      (test-op (op-jmp ':test) (cons ':test 23))
      (state-assert (--> (init-state 1)
                         (reg-set pc 22))))
+
+(test-error
+ (--> (init-state 1)
+      (test-op (op-jmp-indirect ':test) (cons ':test 23))))
+
+(test-error
+ (--> (init-state 1)
+      (reg-set r0 'totally-not-a-number)
+      (test-op (op-jmp-indirect r0))))
 
 (--> (init-state 1)
      (reg-set r0 23)
@@ -20,6 +37,14 @@
      (state-assert (--> (init-state 1)
                         (reg-set pc 22)
                         (reg-set r0 23))))
+
+(test-error
+ (--> (init-state 1)
+      (test-op (op-br r0 23))))
+
+(test-error
+ (--> (init-state 1)
+      (test-op (op-br r0 ':test))))
 
 (--> (init-state 1)
      (test-op (op-br r0 ':test) (cons ':test 23))
@@ -32,18 +57,11 @@
                         (reg-set pc 22)
                         (reg-set r0 'true))))
 
+(test-error
+ (--> (init-state 1)
+      (test-op (op-swap-cdr r1 r1))))
+
 ;; More complex stuff:
-
-(define-fn (t-errors)
-  (op-swap-car r1 r1))
-
-(--> (with-handlers ((identity (lambda (e)
-                                 (init-state 1))))
-       (--> (init-state 1)
-            (reg-set t0 'true)
-            (test ':t-errors
-                  (t-errors))))
-     (state-assert (init-state 1)))
 
 (define-fn (t-running)
   (op-assign t1 pc)
