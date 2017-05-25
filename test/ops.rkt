@@ -7,6 +7,12 @@
 (require "../src/ops.rkt")
 (require "utils.rkt")
 
+(--> (init-state 1)
+     (test-op (op-jmp ':test) (cons ':test 23))
+     (reg-assert pc 22)
+     (reg-set pc 0)
+     (state-assert (init-state 1)))
+
 (define-fn (t-errors)
   (op-swap-car r1 r1))
 
