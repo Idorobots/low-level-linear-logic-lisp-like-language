@@ -7,22 +7,43 @@
 (require "../src/ops.rkt")
 (require "utils.rkt")
 
+;; Basic instructions:
+
 (--> (init-state 1)
      (test-op (op-jmp ':test) (cons ':test 23))
-     (reg-assert pc 22)
-     (reg-set pc 0)
+     (state-assert (--> (init-state 1)
+                        (reg-set pc 22))))
+
+(--> (init-state 1)
+     (reg-set r0 23)
+     (test-op (op-jmp-indirect r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set pc 22)
+                        (reg-set r0 23))))
+
+(--> (init-state 1)
+     (test-op (op-br r0 ':test) (cons ':test 23))
      (state-assert (init-state 1)))
+
+(--> (init-state 1)
+     (reg-set r0 'true)
+     (test-op (op-br r0 ':test) (cons ':test 23))
+     (state-assert (--> (init-state 1)
+                        (reg-set pc 22)
+                        (reg-set r0 'true))))
+
+;; More complex stuff:
 
 (define-fn (t-errors)
   (op-swap-car r1 r1))
 
 (--> (with-handlers ((identity (lambda (e)
                                  (init-state 1))))
-       (test (--> (init-state 1)
-                  (reg-set t0 'true))
-             ':t-errors
-             (t-errors)))
-     (reg-assert t0 'nil))
+       (--> (init-state 1)
+            (reg-set t0 'true)
+            (test ':t-errors
+                  (t-errors))))
+     (state-assert (init-state 1)))
 
 (define-fn (t-running)
   (op-assign t1 pc)
