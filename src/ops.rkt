@@ -120,35 +120,45 @@
 
 ;; r1 := (nil? r2)
 (define-op (op-nil? r1 r2) -> (labels) -> (state)
-  (reg-set state r1 (if (nil? (reg state r2))
-                        'true
-                        'nil)))
+  (if (atom? (reg state r1))
+      (reg-set state r1 (if (nil? (reg state r2))
+                            'true
+                            'nil))
+      (error 'op-nil?-error)))
 
 ;; r1 := (atom? r2)
 (define-op (op-atom? r1 r2) -> (labels) -> (state)
-  (reg-set state r1 (if (atom? (reg state r2))
-                        'true
-                        'nil)))
+  (if (atom? (reg state r1))
+      (reg-set state r1 (if (atom? (reg state r2))
+                            'true
+                            'nil))
+      (error 'op-atom?-error)))
 
 ;; r1 := (eq? r2 r3)
 (define-op (op-eq? r1 r2 r3) -> (labels) -> (state)
-  (reg-set state r1 (if (eq? (reg state r2) (reg state r3))
-                        'true
-                        'nil)))
+  (if (atom? (reg state r1))
+      (reg-set state r1 (if (eq? (reg state r2) (reg state r3))
+                            'true
+                            'nil))
+      (error 'op-eq?-error)))
 
 ;; r1 := (and r2 r3)
 (define-op (op-and r1 r2 r3) -> (labels) -> (state)
-  (reg-set state r1 (if (and (not (nil? (reg state r2)))
-                             (not (nil? (reg state r3))))
-                        'true
-                        'nil)))
+  (if (atom? (reg state r1))
+      (reg-set state r1 (if (and (not (nil? (reg state r2)))
+                                 (not (nil? (reg state r3))))
+                            'true
+                            'nil))
+      (error 'op-and-error)))
 
 ;; r1 := (or r2 r3)
 (define-op (op-or r1 r2 r3) -> (labels) -> (state)
-  (reg-set state r1 (if (or (not (nil? (reg state r2)))
-                            (not (nil? (reg state r3))))
-                        'true
-                        'nil)))
+  (if (atom? (reg state r1))
+      (reg-set state r1 (if (or (not (nil? (reg state r2)))
+                                (not (nil? (reg state r3))))
+                            'true
+                            'nil))
+      (error 'op-or-error)))
 
 ;; r := (address-of label)
 (define-op (op-addr r label)

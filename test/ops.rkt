@@ -57,6 +57,11 @@
                         (reg-set pc 22)
                         (reg-set r0 'true))))
 
+(test-error
+ (--> (init-state 1)
+      (reg-set r0 '(not . nil))
+      (test-op (op-nil? r0 r1))))
+
 (--> (init-state 1)
      (test-op (op-nil? r1 r0))
      (state-assert (--> (init-state 1)
@@ -69,6 +74,11 @@
      (state-assert (--> (init-state 1)
                         (reg-set r0 'true)
                         (reg-set r1 'nil))))
+
+(test-error
+ (--> (init-state 1)
+      (reg-set r0 '(not . nil))
+      (test-op (op-atom? r0 r1))))
 
 (--> (init-state 1)
      (test-op (op-atom? r1 r0))
@@ -89,6 +99,11 @@
      (state-assert (--> (init-state 1)
                         (reg-set r0 '(not-nil . nil))
                         (reg-set r1 'nil))))
+
+(test-error
+ (--> (init-state 1)
+      (reg-set r0 '(not . nil))
+      (test-op (op-eq? r0 r1 r2))))
 
 (--> (init-state 1)
      (reg-set r0 1)
@@ -129,6 +144,11 @@
                         (reg-set r1 1)
                         (reg-set r2 'true))))
 
+(test-error
+ (--> (init-state 1)
+      (reg-set r0 '(not . nil))
+      (test-op (op-and r0 r1 r2))))
+
 (--> (init-state 1)
      (reg-set r0 'nil)
      (reg-set r1 'nil)
@@ -168,6 +188,11 @@
                         (reg-set r0 1)
                         (reg-set r1 2)
                         (reg-set r2 'true))))
+
+(test-error
+ (--> (init-state 1)
+      (reg-set r0 '(not . nil))
+      (test-op (op-or r0 r1 r2))))
 
 (--> (init-state 1)
      (reg-set r0 'nil)
