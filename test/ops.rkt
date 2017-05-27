@@ -211,6 +211,24 @@
 
 (test-error
  (--> (init-state 1)
+      (test-op (op-addr r0 23))))
+
+(test-error
+ (--> (init-state 1)
+      (test-op (op-addr r0 ':test))))
+
+(test-error
+ (--> (init-state 1)
+      (reg-set r0 '(not . nil))
+      (test-op (op-addr r0 ':test) (cons ':test 23))))
+
+(--> (init-state 1)
+     (test-op (op-addr r0 ':test) (cons ':test 23))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 23))))
+
+(test-error
+ (--> (init-state 1)
       (test-op (op-swap-cdr r1 r1))))
 
 ;; More complex stuff:
