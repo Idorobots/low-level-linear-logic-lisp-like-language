@@ -7,16 +7,389 @@
 (require "../src/ops.rkt")
 (require "utils.rkt")
 
-(define-fn (t-errors)
-  (op-swap-car r1 r1))
+;; Basic instructions:
 
-(--> (with-handlers ((identity (lambda (e)
-                                 (init-state 1))))
-       (test (--> (init-state 1)
-                  (reg-set t0 'true))
-             ':t-errors
-             (t-errors)))
-     (reg-assert t0 'nil))
+(test-error
+ (--> (init-state 1)
+      (test-op (op-jmp 23))))
+
+(test-error
+ (--> (init-state 1)
+      (test-op (op-jmp ':test))))
+
+(--> (init-state 1)
+     (test-op (op-jmp ':test) (cons ':test 23))
+     (state-assert (--> (init-state 1)
+                        (reg-set pc 22))))
+
+(test-error
+ (--> (init-state 1)
+      (test-op (op-jmp-indirect ':test) (cons ':test 23))))
+
+(test-error
+ (--> (init-state 1)
+      (reg-set r0 'totally-not-a-number)
+      (test-op (op-jmp-indirect r0))))
+
+(--> (init-state 1)
+     (reg-set r0 23)
+     (test-op (op-jmp-indirect r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set pc 22)
+                        (reg-set r0 23))))
+
+(test-error
+ (--> (init-state 1)
+      (test-op (op-br r0 23))))
+
+(test-error
+ (--> (init-state 1)
+      (test-op (op-br r0 ':test))))
+
+(--> (init-state 1)
+     (test-op (op-br r0 ':test) (cons ':test 23))
+     (state-assert (init-state 1)))
+
+(--> (init-state 1)
+     (reg-set r0 'true)
+     (test-op (op-br r0 ':test) (cons ':test 23))
+     (state-assert (--> (init-state 1)
+                        (reg-set pc 22)
+                        (reg-set r0 'true))))
+
+(test-error
+ (--> (init-state 1)
+      (reg-set r0 '(not . nil))
+      (test-op (op-nil? r0 r1))))
+
+(--> (init-state 1)
+     (test-op (op-nil? r1 r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set r1 'true))))
+
+(--> (init-state 1)
+     (reg-set r0 'true)
+     (reg-set r1 'not-nil)
+     (test-op (op-nil? r1 r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 'true)
+                        (reg-set r1 'nil))))
+
+(test-error
+ (--> (init-state 1)
+      (reg-set r0 '(not . nil))
+      (test-op (op-atom? r0 r1))))
+
+(--> (init-state 1)
+     (test-op (op-atom? r1 r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set r1 'true))))
+
+(--> (init-state 1)
+     (reg-set r0 'not-nil)
+     (test-op (op-atom? r1 r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 'not-nil)
+                        (reg-set r1 'true))))
+
+(--> (init-state 1)
+     (reg-set r0 '(not-nil . nil))
+     (reg-set r1 'not-nil)
+     (test-op (op-atom? r1 r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 '(not-nil . nil))
+                        (reg-set r1 'nil))))
+
+(test-error
+ (--> (init-state 1)
+      (reg-set r0 '(not . nil))
+      (test-op (op-eq? r0 r1 r2))))
+
+(--> (init-state 1)
+     (reg-set r0 1)
+     (reg-set r1 2)
+     (reg-set r2 3)
+     (test-op (op-eq? r2 r1 r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 1)
+                        (reg-set r1 2)
+                        (reg-set r2 'nil))))
+
+(--> (init-state 1)
+     (reg-set r0 '1)
+     (reg-set r1 '(not . nil))
+     (reg-set r2 'not-nil)
+     (test-op (op-eq? r2 r1 r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 '1)
+                        (reg-set r1 '(not . nil))
+                        (reg-set r2 'nil))))
+
+(--> (init-state 1)
+     (reg-set r0 '(not . nil))
+     (reg-set r1 '(not . nil))
+     (reg-set r2 'not-nil)
+     (test-op (op-eq? r2 r1 r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 '(not . nil))
+                        (reg-set r1 '(not . nil))
+                        (reg-set r2 'nil))))
+
+(--> (init-state 1)
+     (reg-set r0 1)
+     (reg-set r1 1)
+     (test-op (op-eq? r2 r1 r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 1)
+                        (reg-set r1 1)
+                        (reg-set r2 'true))))
+
+(test-error
+ (--> (init-state 1)
+      (reg-set r0 '(not . nil))
+      (test-op (op-and r0 r1 r2))))
+
+(--> (init-state 1)
+     (reg-set r0 'nil)
+     (reg-set r1 'nil)
+     (reg-set r2 'not-nil)
+     (test-op (op-and r2 r1 r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 'nil)
+                        (reg-set r1 'nil)
+                        (reg-set r2 'nil))))
+
+(--> (init-state 1)
+     (reg-set r0 'nil)
+     (reg-set r1 'true)
+     (reg-set r2 'not-nil)
+     (test-op (op-and r2 r1 r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 'nil)
+                        (reg-set r1 'true)
+                        (reg-set r2 'nil))))
+
+(--> (init-state 1)
+     (reg-set r0 'true)
+     (reg-set r1 'true)
+     (reg-set r2 'not-nil)
+     (test-op (op-and r2 r1 r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 'true)
+                        (reg-set r1 'true)
+                        (reg-set r2 'true))))
+
+(--> (init-state 1)
+     (reg-set r0 1)
+     (reg-set r1 2)
+     (reg-set r2 'not-nil)
+     (test-op (op-and r2 r1 r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 1)
+                        (reg-set r1 2)
+                        (reg-set r2 'true))))
+
+(test-error
+ (--> (init-state 1)
+      (reg-set r0 '(not . nil))
+      (test-op (op-or r0 r1 r2))))
+
+(--> (init-state 1)
+     (reg-set r0 'nil)
+     (reg-set r1 'nil)
+     (reg-set r2 'not-nil)
+     (test-op (op-or r2 r1 r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 'nil)
+                        (reg-set r1 'nil)
+                        (reg-set r2 'nil))))
+
+(--> (init-state 1)
+     (reg-set r0 'nil)
+     (reg-set r1 'true)
+     (reg-set r2 'not-nil)
+     (test-op (op-or r2 r1 r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 'nil)
+                        (reg-set r1 'true)
+                        (reg-set r2 'true))))
+
+(--> (init-state 1)
+     (reg-set r0 'true)
+     (reg-set r1 'true)
+     (reg-set r2 'not-nil)
+     (test-op (op-or r2 r1 r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 'true)
+                        (reg-set r1 'true)
+                        (reg-set r2 'true))))
+
+(--> (init-state 1)
+     (reg-set r0 1)
+     (reg-set r1 2)
+     (reg-set r2 'not-nil)
+     (test-op (op-or r2 r1 r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 1)
+                        (reg-set r1 2)
+                        (reg-set r2 'true))))
+
+(test-error
+ (--> (init-state 1)
+      (test-op (op-addr r0 23))))
+
+(test-error
+ (--> (init-state 1)
+      (test-op (op-addr r0 ':test))))
+
+(test-error
+ (--> (init-state 1)
+      (reg-set r0 '(not . nil))
+      (test-op (op-addr r0 ':test) (cons ':test 23))))
+
+(--> (init-state 1)
+     (test-op (op-addr r0 ':test) (cons ':test 23))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 23))))
+
+(test-error
+ (--> (init-state 1)
+      (test-op (op-set r0 '(not-atom . nil)))))
+
+(test-error
+ (--> (init-state 1)
+      (reg-set r0 '(not . nil))
+      (test-op (op-set r0 'test))))
+
+(--> (init-state 1)
+     (test-op (op-set r0 'test))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 'test))))
+
+(test-error
+ (--> (init-state 1)
+     (reg-set r1 '(not-atom . nil))
+     (test-op (op-assign r0 r1))))
+
+(test-error
+ (--> (init-state 1)
+     (reg-set r0 '(not-atom . nil))
+     (test-op (op-assign r0 r1))))
+
+(--> (init-state 1)
+     (reg-set r1 'test)
+     (test-op (op-assign r0 r1))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 'test)
+                        (reg-set r1 'test))))
+
+(--> (init-state 1)
+     (reg-set r0 1)
+     (reg-set r1 2)
+     (test-op (op-swap r0 r1))
+     (state-assert (--> (init-state 1)
+                        (reg-set r1 1)
+                        (reg-set r0 2))))
+
+(--> (init-state 1)
+     (reg-set r0 '(not . nil))
+     (reg-set r1 2)
+     (test-op (op-swap r0 r1))
+     (state-assert (--> (init-state 1)
+                        (reg-set r1 '(not . nil))
+                        (reg-set r0 2))))
+
+(--> (init-state 1)
+     (reg-set r0 '(not . nil))
+     (reg-set r1 '(some . val))
+     (test-op (op-swap r0 r1))
+     (state-assert (--> (init-state 1)
+                        (reg-set r1 '(not . nil))
+                        (reg-set r0 '(some . val)))))
+
+(--> (init-state 1)
+     (reg-set r0 'not-nil)
+     (test-op (op-swap r0 r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 'not-nil))))
+
+(test-error
+ (--> (init-state 1)
+      (test-op (op-swap-car r1 r1))))
+
+(test-error
+ (--> (init-state 1)
+      (reg-set r1 'not-cons)
+      (test-op (op-swap-car r0 r1))))
+
+(--> (init-state 1)
+     (reg-set r0 1)
+     (reg-set r1 '(2 . 3))
+     (test-op (op-swap-car r0 r1))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 2)
+                        (reg-set r1 '(1 . 3)))))
+
+(--> (init-state 1)
+     (reg-set r0 '(1 . 2))
+     (reg-set r1 '(2 . 3))
+     (test-op (op-swap-car r0 r1))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 2)
+                        (reg-set r1 '((1 . 2) . 3)))))
+
+(test-error
+ (--> (init-state 1)
+      (test-op (op-swap-cdr r1 r1))))
+
+(test-error
+ (--> (init-state 1)
+      (reg-set r1 'not-cons)
+      (test-op (op-swap-cdr r0 r1))))
+
+(--> (init-state 1)
+     (reg-set r0 1)
+     (reg-set r1 '(2 . 3))
+     (test-op (op-swap-cdr r0 r1))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 3)
+                        (reg-set r1 '(2 . 1)))))
+
+(--> (init-state 1)
+     (reg-set r0 '(1 . 2))
+     (reg-set r1 '(2 . 3))
+     (test-op (op-swap-cdr r0 r1))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 3)
+                        (reg-set r1 '(2 1 . 2)))))
+
+(map (lambda (op-op op)
+       (test-error
+        (--> (init-state 1)
+             (reg-set r0 '(not . atom))
+             (test-op (op-op r0 r1 r2))))
+       (test-error
+        (--> (init-state 1)
+             (reg-set r1 'not-number)
+             (reg-set r2 2)
+             (test-op (op-op r0 r1 r2))))
+       (test-error
+        (--> (init-state 1)
+             (reg-set r1 '(1 . 2))
+             (reg-set r2 2)
+             (test-op (op-op r0 r1 r2))))
+       (--> (init-state 1)
+            (reg-set r1 23)
+            (reg-set r2 5)
+            (test-op (op-op r0 r1 r2))
+            (state-assert (--> (init-state 1)
+                               (reg-set r0 (op 23 5))
+                               (reg-set r1 23)
+                               (reg-set r2 5)))))
+     (list op-add op-sub op-mul op-div)
+     (list + - * /))
+
+;; More complex stuff:
 
 (define-fn (t-running)
   (op-assign t1 pc)

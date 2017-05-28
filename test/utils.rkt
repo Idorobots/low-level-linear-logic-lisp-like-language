@@ -21,7 +21,12 @@
 (define (reg-assert state r value)
   (if (equal? (reg state r) value)
       state
-      (error (format "Register ~s was not equal to ~s in ~s" r value state))))
+      (error-fmt "Register ~s was not equal to ~s in ~s" r value state)))
+
+(define (state-assert state expected)
+  (if (equal? state expected)
+      state
+      (error-fmt "State ~s was not equal to ~s" state expected)))
 
 (define (test state startup . code)
   (newline)
@@ -31,3 +36,24 @@
   (newline)
   (newline)
   (run startup state startup code))
+
+(define (test-op state op . labels)
+  (newline)
+  (display "Testing ")
+  (display (instruction-repr op
+                             (cons (cons ':halt :halt)
+                                   labels)))
+  (display ": ")
+  (let ((s (((instruction-asm op) labels) state)))
+    (display s)
+    (newline)
+    s))
+
+(define-syntax test-error
+  (syntax-rules ()
+    ((test-error body ...)
+     (unless (equal? 'caught-an-error
+                     (with-handlers ((identity (lambda (e)
+                                                 'caught-an-error)))
+                       body ...))
+       (error "Test did not catch an error.")))))
