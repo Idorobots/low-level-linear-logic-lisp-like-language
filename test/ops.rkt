@@ -363,6 +363,32 @@
                         (reg-set r0 3)
                         (reg-set r1 '(2 1 . 2)))))
 
+(map (lambda (op-op op)
+       (test-error
+        (--> (init-state 1)
+             (reg-set r0 '(not . atom))
+             (test-op (op-op r0 r1 r2))))
+       (test-error
+        (--> (init-state 1)
+             (reg-set r1 'not-number)
+             (reg-set r2 2)
+             (test-op (op-op r0 r1 r2))))
+       (test-error
+        (--> (init-state 1)
+             (reg-set r1 '(1 . 2))
+             (reg-set r2 2)
+             (test-op (op-op r0 r1 r2))))
+       (--> (init-state 1)
+            (reg-set r1 23)
+            (reg-set r2 5)
+            (test-op (op-op r0 r1 r2))
+            (state-assert (--> (init-state 1)
+                               (reg-set r0 (op 23 5))
+                               (reg-set r1 23)
+                               (reg-set r2 5)))))
+     (list op-add op-sub op-mul op-div)
+     (list + - * /))
+
 ;; More complex stuff:
 
 (define-fn (t-running)
