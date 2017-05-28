@@ -254,6 +254,37 @@
 
 (test-error
  (--> (init-state 1)
+      (test-op (op-set r0 '(not-atom . nil)))))
+
+(test-error
+ (--> (init-state 1)
+      (reg-set r0 '(not . nil))
+      (test-op (op-set r0 'test))))
+
+(--> (init-state 1)
+     (test-op (op-set r0 'test))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 'test))))
+
+(test-error
+ (--> (init-state 1)
+     (reg-set r1 '(not-atom . nil))
+     (test-op (op-assign r0 r1))))
+
+(test-error
+ (--> (init-state 1)
+     (reg-set r0 '(not-atom . nil))
+     (test-op (op-assign r0 r1))))
+
+(--> (init-state 1)
+     (reg-set r1 'test)
+     (test-op (op-assign r0 r1))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 'test)
+                        (reg-set r1 'test))))
+
+(test-error
+ (--> (init-state 1)
       (test-op (op-swap-cdr r1 r1))))
 
 ;; More complex stuff:
