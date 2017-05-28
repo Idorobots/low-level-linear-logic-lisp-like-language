@@ -283,9 +283,85 @@
                         (reg-set r0 'test)
                         (reg-set r1 'test))))
 
+(--> (init-state 1)
+     (reg-set r0 1)
+     (reg-set r1 2)
+     (test-op (op-swap r0 r1))
+     (state-assert (--> (init-state 1)
+                        (reg-set r1 1)
+                        (reg-set r0 2))))
+
+(--> (init-state 1)
+     (reg-set r0 '(not . nil))
+     (reg-set r1 2)
+     (test-op (op-swap r0 r1))
+     (state-assert (--> (init-state 1)
+                        (reg-set r1 '(not . nil))
+                        (reg-set r0 2))))
+
+(--> (init-state 1)
+     (reg-set r0 '(not . nil))
+     (reg-set r1 '(some . val))
+     (test-op (op-swap r0 r1))
+     (state-assert (--> (init-state 1)
+                        (reg-set r1 '(not . nil))
+                        (reg-set r0 '(some . val)))))
+
+(--> (init-state 1)
+     (reg-set r0 'not-nil)
+     (test-op (op-swap r0 r0))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 'not-nil))))
+
+(test-error
+ (--> (init-state 1)
+      (test-op (op-swap-car r1 r1))))
+
+(test-error
+ (--> (init-state 1)
+      (reg-set r1 'not-cons)
+      (test-op (op-swap-car r0 r1))))
+
+(--> (init-state 1)
+     (reg-set r0 1)
+     (reg-set r1 '(2 . 3))
+     (test-op (op-swap-car r0 r1))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 2)
+                        (reg-set r1 '(1 . 3)))))
+
+(--> (init-state 1)
+     (reg-set r0 '(1 . 2))
+     (reg-set r1 '(2 . 3))
+     (test-op (op-swap-car r0 r1))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 2)
+                        (reg-set r1 '((1 . 2) . 3)))))
+
 (test-error
  (--> (init-state 1)
       (test-op (op-swap-cdr r1 r1))))
+
+(test-error
+ (--> (init-state 1)
+      (reg-set r1 'not-cons)
+      (test-op (op-swap-cdr r0 r1))))
+
+(--> (init-state 1)
+     (reg-set r0 1)
+     (reg-set r1 '(2 . 3))
+     (test-op (op-swap-cdr r0 r1))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 3)
+                        (reg-set r1 '(2 . 1)))))
+
+(--> (init-state 1)
+     (reg-set r0 '(1 . 2))
+     (reg-set r1 '(2 . 3))
+     (test-op (op-swap-cdr r0 r1))
+     (state-assert (--> (init-state 1)
+                        (reg-set r0 3)
+                        (reg-set r1 '(2 1 . 2)))))
 
 ;; More complex stuff:
 
