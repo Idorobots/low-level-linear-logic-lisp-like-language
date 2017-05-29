@@ -25,6 +25,20 @@
                                (list (list (op-assign r1 r0)))))
                r1)
 
+(test-macro (mc-or r0
+                   (op-atom? r1 r2)
+                   (op-atom? t1 t2))
+            (list (op-atom? r1 r2)
+                  (op-atom? t1 t2)
+                  (op-or r0 r1 t1)))
+
+(test-macro (mc-and r0
+                   (op-atom? r1 r2)
+                   (op-atom? t1 t2))
+            (list (op-atom? r1 r2)
+                  (op-atom? t1 t2)
+                  (op-and r0 r1 t1)))
+
 ;; More complex stuff
 
 (define-fn (t-spilling)

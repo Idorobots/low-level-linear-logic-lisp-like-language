@@ -49,6 +49,14 @@
     (newline)
     s))
 
+(define (test-macro macro expected)
+  (assert-equal? (map (lambda (op)
+                        (instruction-repr op '()))
+                      (flatten macro))
+                 (map (lambda (op)
+                        (instruction-repr op '()))
+                      expected)))
+
 (define-syntax test-error
   (syntax-rules ()
     ((test-error body ...)
