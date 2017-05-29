@@ -39,6 +39,21 @@
                   (op-atom? t1 t2)
                   (op-and r0 r1 t1)))
 
+(test-macro (mc-spill '() (op-swap t0 t0))
+            (list (op-swap t0 t0)))
+
+(test-macro (mc-spill (list t0) (op-swap r0 r0))
+            (list (mc-push sp t0)
+                  (op-swap r0 r0)
+                  (mc-pop t0 sp)))
+
+(test-macro (mc-spill (list t0 t1) (op-swap r0 r0))
+            (list (mc-push sp t0)
+                  (mc-push sp t1)
+                  (op-swap r0 r0)
+                  (mc-pop t1 sp)
+                  (mc-pop t0 sp)))
+
 ;; More complex stuff
 
 (define-fn (t-spilling)
