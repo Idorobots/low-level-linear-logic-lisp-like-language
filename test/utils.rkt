@@ -38,16 +38,15 @@
   (run startup state startup code))
 
 (define (test-op state op . labels)
-  (newline)
-  (display "Testing ")
-  (display (instruction-repr op
-                             (cons (cons ':halt :halt)
-                                   labels)))
-  (display ": ")
-  (let ((s (((instruction-asm op) labels) state)))
-    (display s)
+  (let ((ls (cons (cons ':halt :halt) labels)))
     (newline)
-    s))
+    (display "Testing ")
+    (display (instruction-repr op ls))
+    (display ": ")
+    (let ((s (((instruction-asm op) ls) state)))
+      (display s)
+      (newline)
+      s)))
 
 (define-syntax test-macro
   (syntax-rules ()
