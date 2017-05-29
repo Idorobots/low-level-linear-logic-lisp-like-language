@@ -8,6 +8,25 @@
 (require "../src/macros.rkt")
 (require "utils.rkt")
 
+;; Basic stuff
+
+(test-error (returned 23))
+
+(test-error (returned (list 23)))
+
+(assert-equal? (returned (op-set r0 'test))
+               r0)
+
+(assert-equal? (returned (list (op-set r0 'test)
+                               (op-assign r1 r0)))
+               r1)
+
+(assert-equal? (returned (list (op-set r0 'test)
+                               (list (list (op-assign r1 r0)))))
+               r1)
+
+;; More complex stuff
+
 (define-fn (t-spilling)
   (op-set t1 'hello)
   (op-set t2 'world)

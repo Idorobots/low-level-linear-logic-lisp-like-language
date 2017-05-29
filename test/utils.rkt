@@ -23,10 +23,10 @@
       state
       (error-fmt "Register ~s was not equal to ~s in ~s" r value state)))
 
-(define (state-assert state expected)
-  (if (equal? state expected)
-      state
-      (error-fmt "State ~s was not equal to ~s" state expected)))
+(define (assert-equal? value expected)
+  (if (equal? value expected)
+      value
+      (error-fmt "Value ~s was not equal to ~s" value expected)))
 
 (define (test state startup . code)
   (newline)
