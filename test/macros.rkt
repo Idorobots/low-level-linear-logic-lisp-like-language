@@ -54,6 +54,39 @@
                   (mc-pop t1 sp)
                   (mc-pop t0 sp)))
 
+(test-macro (mc-call ':test)
+            (list (op-set tpc 4)
+                  (op-add tpc tpc pc)
+                  (mc-push sp tpc)
+                  (op-jmp ':test)))
+
+(test-macro (mc-call ':test r0 r1 r2)
+            (list (op-set tpc 4)
+                  (op-add tpc tpc pc)
+                  (mc-push sp tpc)
+                  (op-jmp ':test)))
+
+(test-macro (mc-call t0 r0 r1 r2)
+            (list (op-set tpc 4)
+                  (op-add tpc tpc pc)
+                  (mc-push sp tpc)
+                  (op-jmp-indirect t0)))
+
+(test-macro (mc-call ':test r1 r0)
+            (mc-spill (list t0 t1)
+                      (op-swap r1 t0)
+                      (op-swap r0 t1)
+                      (op-swap r0 t0)
+                      (op-swap r1 t1)
+                      (op-set tpc 4)
+                      (op-add tpc tpc pc)
+                      (mc-push sp tpc)
+                      (op-jmp ':test)
+                      (op-swap r0 t0)
+                      (op-swap r1 t1)
+                      (op-swap r1 t0)
+                      (op-swap r0 t1)))
+
 ;; More complex stuff
 
 (define-fn (t-spilling)
