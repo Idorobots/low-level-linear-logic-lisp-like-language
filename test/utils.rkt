@@ -23,10 +23,10 @@
       state
       (error-fmt "Register ~s was not equal to ~s in ~s" r value state)))
 
-(define (state-assert state expected)
-  (if (equal? state expected)
-      state
-      (error-fmt "State ~s was not equal to ~s" state expected)))
+(define (assert-equal? value expected)
+  (if (equal? value expected)
+      value
+      (error-fmt "Value ~s was not equal to ~s" value expected)))
 
 (define (test state startup . code)
   (newline)
@@ -38,16 +38,29 @@
   (run startup state startup code))
 
 (define (test-op state op . labels)
-  (newline)
-  (display "Testing ")
-  (display (instruction-repr op
-                             (cons (cons ':halt :halt)
-                                   labels)))
-  (display ": ")
-  (let ((s (((instruction-asm op) labels) state)))
-    (display s)
+  (let ((ls (cons (cons ':halt :halt) labels)))
     (newline)
-    s))
+    (display "Testing ")
+    (display (instruction-repr op ls))
+    (display ": ")
+    (let ((s (((instruction-asm op) ls) state)))
+      (display s)
+      (newline)
+      s)))
+
+(define-syntax test-macro
+  (syntax-rules ()
+    ((test-macro macro expected)
+     (begin (newline)
+            (display "Testing ")
+            (display 'macro)
+            (newline)
+            (assert-equal? (map (lambda (op)
+                                  (instruction-repr op '()))
+                                (flatten macro))
+                           (map (lambda (op)
+                                  (instruction-repr op '()))
+                                (flatten expected)))))))
 
 (define-syntax test-error
   (syntax-rules ()

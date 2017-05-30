@@ -8,6 +8,87 @@
 (require "../src/macros.rkt")
 (require "utils.rkt")
 
+;; Basic stuff
+
+(test-error (returned 23))
+
+(test-error (returned (list 23)))
+
+(assert-equal? (returned (op-set r0 'test))
+               r0)
+
+(assert-equal? (returned (list (op-set r0 'test)
+                               (op-assign r1 r0)))
+               r1)
+
+(assert-equal? (returned (list (op-set r0 'test)
+                               (list (list (op-assign r1 r0)))))
+               r1)
+
+(test-macro (mc-or r0
+                   (op-atom? r1 r2)
+                   (op-atom? t1 t2))
+            (list (op-atom? r1 r2)
+                  (op-atom? t1 t2)
+                  (op-or r0 r1 t1)))
+
+(test-macro (mc-and r0
+                   (op-atom? r1 r2)
+                   (op-atom? t1 t2))
+            (list (op-atom? r1 r2)
+                  (op-atom? t1 t2)
+                  (op-and r0 r1 t1)))
+
+(test-macro (mc-spill '() (op-swap t0 t0))
+            (list (op-swap t0 t0)))
+
+(test-macro (mc-spill (list t0) (op-swap r0 r0))
+            (list (mc-push sp t0)
+                  (op-swap r0 r0)
+                  (mc-pop t0 sp)))
+
+(test-macro (mc-spill (list t0 t1) (op-swap r0 r0))
+            (list (mc-push sp t0)
+                  (mc-push sp t1)
+                  (op-swap r0 r0)
+                  (mc-pop t1 sp)
+                  (mc-pop t0 sp)))
+
+(test-macro (mc-call ':test)
+            (list (op-set tpc 4)
+                  (op-add tpc tpc pc)
+                  (mc-push sp tpc)
+                  (op-jmp ':test)))
+
+(test-macro (mc-call ':test r0 r1 r2)
+            (list (op-set tpc 4)
+                  (op-add tpc tpc pc)
+                  (mc-push sp tpc)
+                  (op-jmp ':test)))
+
+(test-macro (mc-call t0 r0 r1 r2)
+            (list (op-set tpc 4)
+                  (op-add tpc tpc pc)
+                  (mc-push sp tpc)
+                  (op-jmp-indirect t0)))
+
+(test-macro (mc-call ':test r1 r0)
+            (mc-spill (list t0 t1)
+                      (op-swap r1 t0)
+                      (op-swap r0 t1)
+                      (op-swap r0 t0)
+                      (op-swap r1 t1)
+                      (op-set tpc 4)
+                      (op-add tpc tpc pc)
+                      (mc-push sp tpc)
+                      (op-jmp ':test)
+                      (op-swap r0 t0)
+                      (op-swap r1 t1)
+                      (op-swap r1 t0)
+                      (op-swap r0 t1)))
+
+;; More complex stuff
+
 (define-fn (t-spilling)
   (op-set t1 'hello)
   (op-set t2 'world)
